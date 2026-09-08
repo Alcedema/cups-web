@@ -480,8 +480,8 @@ make docker-build   # AIO 镜像
 
 ### CI/CD
 
-- **`build-release.yml`**：7 平台交叉编译 + tag 自动 Release。Go 版本与 `go.mod` 一致（`1.26`）。
-- **`docker-publish.yml`**：`master` / `v*` tag → 三架构镜像。开头有 `Free disk space` 步骤。
+- **`build-release.yml`**：7 平台交叉编译。v* tag → 正式 Release；master 分支 → 滚动 `dev` prerelease（git 标签 `dev`，不用分支名，避免重名冲突）
+- **`docker-publish.yml`**：`master` / `v*` tag → 三架构镜像。v* tag → `vX.Y.Z` + `latest`；master 分支 → `dev`（`VERSION` 同步）。开头有 `Free disk space` 步骤。
 
 ### 版本管理
 

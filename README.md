@@ -219,6 +219,8 @@ services:
 wget https://raw.githubusercontent.com/hanxi/cups-web/master/docker-compose.yml
 ```
 
+> 💡 镜像标签：`latest` = 最新正式发行版（v* tag）；`dev` = master 分支最新构建（每次 push 更新，尝鲜用）。`docker-compose.yml` 默认用 `latest`，想试 dev 版本时把 `image: hanxi/cups-web:latest` 改成 `image: hanxi/cups-web:dev` 即可。
+
 ### 2. 配置环境变量（可选）
 
 在同目录创建 `.env`：

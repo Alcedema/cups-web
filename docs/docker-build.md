@@ -76,8 +76,8 @@ Eclipse Temurin 对 "Linux ARM 32-bit Hard-Float" 仅 JDK 8/11 有二进制，JD
 
 两条 workflow：
 
-- **`build-release.yml`**：push 到任何分支和 tag 时，针对 7 个平台交叉编译二进制（`linux/amd64`、`linux/arm64`、`linux/armv7`、`linux/loong64`、`darwin/amd64`、`darwin/arm64`、`windows/amd64`），tag push 时自动创建 Release。CI 使用的 Go 版本（`setup-go` 的 `go-version`）与 `go.mod` 保持一致（当前 `1.26`），升级 `go.mod` 时请同步 CI。
-- **`docker-publish.yml`**：push 到 `master` 或 `v*` tag 时构建并推送镜像。**合并单容器后这里只剩一个 `build` job**（原来是 cups 镜像 + cups-web 镜像两个 job），单份 `Dockerfile` 出 `linux/amd64,linux/arm64,linux/arm/v7` 三架构的 `hanxi/cups-web`，`VERSION=${{ github.ref_name }}` 作为 build-arg 注入版本号，缓存 scope 为 `cups-web`。开头还有一步 `Free disk space`（删 dotnet/android/CodeQL 缓存）——AIO 镜像把 CUPS 编译 + LibreOffice + 驱动生态塞进一份镜像后体积很大，GitHub runner 默认磁盘不够。
+- **`build-release.yml`**：push 到任何分支和 tag 时交叉编译 7 平台二进制（`linux/amd64`、`linux/arm64`、`linux/armv7`、`linux/loong64`、`darwin/amd64`、`darwin/arm64`、`windows/amd64`）。v* tag 推送时创建正式 Release；master 分支推送时创建滚动更新 `dev` prerelease（git 标签 `dev`，避免用分支名现 git 标签引来重名冲突）。CI 使用的 Go 版本（`setup-go` 的 `go-version`）与 `go.mod` 保持一致（当前 `1.26`），升级 `go.mod` 时请同步 CI。
+- **`docker-publish.yml`**：push 到 `master` 或 `v*` tag 时构建并推送镜像。**合并单容器后这里只剩一个 `build` job**（原来是 cups 镜像 + cups-web 镜像两个 job），单份 `Dockerfile` 出 `linux/amd64,linux/arm64,linux/arm/v7` 三架构的 `hanxi/cups-web`。v* tag 推送时打 `vX.Y.Z` + `latest` 两个镜像 tag；master 分支推送时打 `dev` 镜像 tag（避免 `master` 与分支/标签引用重名），`VERSION` build-arg 同步为 `dev`。缓存 scope 为 `cups-web`。开头还有一步 `Free disk space`（删 dotnet/android/CodeQL 缓存）——AIO 镜像把 CUPS 编译 + LibreOffice + 驱动生态塞进一份镜像后体积很大，GitHub runner 默认磁盘不够。
 
 补充说明：
 
