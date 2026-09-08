@@ -136,11 +136,17 @@ done
 # "IPP Everywhere (color)" 机型。两者均允许缺失（某些架构 ipp-usb 可能未安装，
 # 或容器未拿到 USB 设备），失败不影响 cupsd 启动。
 if command -v avahi-daemon >/dev/null 2>&1; then
-    # 不存在 dbus 时 avahi-daemon 会失败，用 --no-rlimits --no-drop-root 简化容器内启动；
-    # 如宿主 dbus 不可用则静默跳过。
+    # avahi-daemon 依赖 system dbus，由容器内自带的 dbus-daemon 提供。
+    # ⚠️ 不要把宿主 /run/dbus/system_bus_socket 挂进来（issue #107）：
+    # socket 路径被宿主文件占用后这里的 dbus-daemon 起不来，avahi 跟着失效，
+    # CUPS 既发现不了 dnssd:// 网络打印机，AirPrint 也无法广播。
+    # 启动失败不再完全静默，打一条 WARN 便于排查（issue #107）。
     mkdir -p /var/run/dbus
-    (dbus-daemon --system --fork 2>/dev/null || true)
-    (avahi-daemon --daemonize --no-chroot 2>/dev/null || true)
+    if ! err=$(dbus-daemon --system --fork 2>&1); then
+        echo "[entrypoint] WARN: dbus-daemon 启动失败，avahi 不可用——网络打印机发现与 AirPrint 广播将失效（检查是否误挂了宿主 dbus socket）：${err}"
+    elif ! err=$(avahi-daemon --daemonize --no-chroot 2>&1); then
+        echo "[entrypoint] WARN: avahi-daemon 启动失败——无法发现 dnssd:// 网络打印机，AirPrint 不广播：${err}"
+    fi
 fi
 if command -v ipp-usb >/dev/null 2>&1; then
     # ipp-usb 默认走 systemd，容器里直接前台 --no-fork 失败，用后台模式；

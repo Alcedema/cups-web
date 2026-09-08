@@ -9,7 +9,7 @@
 3. **CUPS 配置还原**：`/etc/cups/cupsd.conf` 不存在（挂了空卷）时从镜像内的 `/etc/cups-bak/` 复制；随后**在 if 之外**幂等补 `ssl/` 目录与 `ReadyPaperSizes`（见下方专门说明）
 4. **HP 1020 PPD 的 Letter → A4 一次性修补**（issue #48）：只改 `*Product` + `*FoomaticIDs` 双重指纹命中、且当前默认仍是 Letter、且 `*PageSize A4` 存在的存量 PPD，改前备份 `.bak-cupsweb-issue48`
 5. **HP host-based 固件上传**：容器内没有 udev daemon，手动喂 `SUBSYSTEM=usb` 调用 foo2zjs 上游的 `/usr/lib/udev/hplj{1000,1005,1018,1020}` + `hpljP{1005,1006,1505}`，**后台跑**（上游脚本里有 `sleep 3`，同步调用会拖慢 cupsd 启动），日志在 `/var/log/cups/hp-firmware.log`
-6. **dbus + avahi + ipp-usb**：后台拉起，用于 driverless / IPP Everywhere 发现；三者均允许缺失/失败，不影响 cupsd
+6. **dbus + avahi + ipp-usb**：后台拉起，用于 driverless / IPP Everywhere 发现与 AirPrint 广播；三者均允许缺失/失败，不影响 cupsd。⚠️ dbus 用**容器内自启**的 `dbus-daemon --system`，不要挂载宿主 `/run/dbus/system_bus_socket`——socket 路径被占会导致容器 dbus 起不来、avahi 跟着失效（issue #107）；dbus/avahi 启动失败现在会打 `WARN` 日志而非静默
 7. **cupsd + watchdog**（见下方专门说明）
 8. **等 cupsd 就绪**：`lpstat -r` 轮询，最多 30 次 × 1s
 9. **HP 1020 队列 `media-default=A4`**：后台对命中的 HP 1020 队列执行 `lpadmin -p NAME -o media=iso_a4_210x297mm`，让 iOS 打印面板打开时**预选** A4。⚠️ 见下方「media-ready 的真相」——这一句**不**影响纸张候选**列表**

@@ -196,7 +196,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       hp-ppd \
       hplip \
       avahi-daemon \
+      # avahi-utils（issue #107）：提供 avahi-browse / avahi-resolve，
+      # 排查"发现不了网络打印机 / AirPrint 搜不到"时在容器内直接验证 mDNS。
+      avahi-utils \
       dbus \
+      # libnss-mdns（issue #107）：让 glibc NSS 能解析 .local 域名。没有它时
+      # 添加 dnssd://Brother%20xxx._ipp._tcp.local 这类网络打印机 URI 会因
+      # 解析不出 IP 而超时。Debian 的 postinst 会自动把
+      # mdns4_minimal [NOTFOUND=return] 写进 /etc/nsswitch.conf 的 hosts 行。
+      libnss-mdns \
       # ── 通用工具（驱动安装脚本需要） ──
       curl \
       wget \

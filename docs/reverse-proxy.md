@@ -144,10 +144,13 @@ Traefik 同样默认转发 `X-Forwarded-*` 全套。注意它默认会保留原�
 - 反代部署下限流按真实客户端 IP 生效，符合预期——前提是代理设置了
   `X-Forwarded-For $proxy_add_x_forwarded_for`。
 - **把 cups-web 的端口直接暴露到公网**时，攻击者每次请求换一个伪造的
-  `X-Forwarded-For` 即可绕过锁定。所以公网部署应只暴露反代端口，用防火墙或
-  Docker 端口绑定（`127.0.0.1:1180:8080`）挡住后端直连。
+  `X-Forwarded-For` 即可绕过锁定。所以公网部署应只暴露反代端口，用防火墙
+  挡住后端直连。新版 compose 为 host 网络模式（issue #107），没有 Docker
+  端口绑定可用——可把 `LISTEN_ADDR` 改成 `127.0.0.1:1180` 让 Web 只监听
+  回环地址（cupsd 的 631 端口则用防火墙或 `cupsd.conf` 的 `Listen`/`<Location>`
+  限制）。
 
 ## 相关
 
 - [AGENTS.md 的「🔐 认证与安全」](../AGENTS.md#-认证与安全)——鉴权链与 cookie 约定速查
-- [docker-build.md](docker-build.md)——端口映射与 compose 配置理由
+- [docker-build.md](docker-build.md)——网络模式与 compose 配置理由

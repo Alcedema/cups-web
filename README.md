@@ -189,21 +189,23 @@ services:
     image: hanxi/cups-web:latest
     container_name: cups
     user: root
+    hostname: CUPS
+    # mDNS/DNS-SD 依赖局域网组播，桥接模式下发现不了网络打印机、
+    # AirPrint 也广播不出去，必须用 host 网络（issue #107）
+    network_mode: host
     security_opt:
       - apparmor:unconfined
     environment:
       - CUPSADMIN=${CUPSADMIN:-print}
       - CUPSPASSWORD=${CUPSPASSWORD:-print}
       - TZ=${TZ:-Asia/Shanghai}
-    ports:
-      - "631:631"
-      - "1180:8080"
+      # host 网络下 Web 直接监听宿主端口，默认 1180（与旧版端口映射一致）
+      - LISTEN_ADDR=${LISTEN_ADDR:-:1180}
     volumes:
       - ./.etc:/etc/cups
       - ./.data:/data
       - ./.uploads:/uploads
       - ./.drivers:/opt/cups-drivers/data
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
       - /dev/bus/usb:/dev/bus/usb
       - /run/udev:/run/udev:ro
     device_cgroup_rules:
@@ -360,8 +362,8 @@ export LISTEN_ADDR=:8080
 
 ### 默认端口
 
-- CUPS：`631`（管理界面 + IPP 协议）
-- Web：容器内 `8080`，`docker-compose.yml` 默认映射到宿主机 `1180`
+- CUPS：`631`（管理界面 + IPP 协议）。Docker 部署使用 host 网络模式（[Issue #107](https://github.com/hanxi/cups-web/issues/107)），cupsd 直接占用宿主机 `631`
+- Web：二进制部署默认监听 `8080`；Docker 部署由 `LISTEN_ADDR` 环境变量决定，`docker-compose.yml` 默认 `:1180`（与旧版桥接时代的端口映射保持一致）
 
 ### 数据持久化目录
 
@@ -380,12 +382,16 @@ Docker 默认卷映射：
 | --- | --- | --- |
 | `/dev/bus/usb` | `/dev/bus/usb` | 以**目录**方式挂载（而不是 `devices:`），这样打印机后开机时新建的设备节点能实时传播进容器 |
 | `/run/udev` | `/run/udev`（只读） | 让 libusb 读到设备属性，改善识别；宿主机没有该目录时可以删掉这一行 |
-| `/run/dbus/system_bus_socket` | `/run/dbus/system_bus_socket` | 共享宿主机的 D-Bus system bus socket，让容器内的 CUPS 能通过宿主机的 avahi-daemon 广播 AirPrint 服务（[Issue #94](https://github.com/hanxi/cups-web/issues/94)）。需要宿主机安装并运行 `avahi-daemon`，详见 [AirPrint 搜不到打印机](#airprint-搜不到打印机) |
+
+> ⚠️ **从旧版升级注意**：旧版 compose 还挂载了 `/run/dbus/system_bus_socket`（[Issue #94](https://github.com/hanxi/cups-web/issues/94)，借用宿主机 avahi 广播 AirPrint），新版已**移除**（[Issue #107](https://github.com/hanxi/cups-web/issues/107)）：宿主机没装 avahi-daemon 时，该挂载会让容器内自己的 dbus/avahi 起不来，网络打印机发现与 AirPrint 广播全部失效。host 网络模式下容器内自启的 avahi 已能直接在局域网发现和广播，无需依赖宿主机任何服务。请同步删除你本地 compose 里的这一行。
 
 ### 其他 compose 选项说明
 
 | 选项 | 为什么需要 |
 | --- | --- |
+| `network_mode: host` | mDNS/DNS-SD 依赖局域网组播（5353/udp），桥接模式下组播出不去也进不来：容器发现不了局域网网络打印机，手机也搜不到 AirPrint（[Issue #107](https://github.com/hanxi/cups-web/issues/107)）。代价是无法自定义端口映射，CUPS 固定占用宿主 `631`、Web 由 `LISTEN_ADDR` 决定；宿主若自装 avahi-daemon 会与容器内 avahi 抢 5353 端口，且宿主 avahi 无法替容器广播（两条独立 D-Bus 总线），需停掉宿主侧 |
+| `hostname: CUPS` | avahi 以 `CUPS.local` 在局域网广播 AirPrint / IPP Everywhere 服务 |
+| `LISTEN_ADDR=:1180` | host 网络下没有端口映射，让 Web 直接监听宿主 `1180`，与旧桥接时代一致，书签 / 反代配置无需改动 |
 | `user: root` | 容器内要运行 cupsd、`lpadmin`、`dpkg`（驱动安装），还要往 `/usr/lib/cups`、`/usr/share/ppd` 等系统路径写驱动文件 |
 | `security_opt: [apparmor:unconfined]` | 解除 AppArmor 限制（[Issue #91](https://github.com/hanxi/cups-web/issues/91)）。PVE (Proxmox VE) LXC 等环境下会出现 `apparmor="DENIED"` 导致打印失败；单容器化后它同时也保护 LibreOffice / OFD 转换子进程不被拦截 |
 | `device_cgroup_rules: ['c 189:* rmw']` | 放开 USB 字符设备（major 189）的 cgroup 权限，配合 `/dev/bus/usb` 目录挂载实现 USB 打印机热插拔（[Issue #81](https://github.com/hanxi/cups-web/issues/81)）。若你的 Docker 环境不支持该字段，改用 `privileged: true` |
@@ -460,15 +466,14 @@ server {
 
 ### 修改端口
 
-编辑 `docker-compose.yml`：
+新版默认 host 网络模式（[Issue #107](https://github.com/hanxi/cups-web/issues/107)），**没有端口映射可改**：
 
-```yaml
-services:
-  cups:
-    ports:
-      - "你的CUPS端口:631"
-      - "你的Web端口:8080"
-```
+- **Web 端口**：改 compose 里的 `LISTEN_ADDR`（默认 `:1180`），或在 `.env` 中设置：
+  ```bash
+  LISTEN_ADDR=:你的Web端口
+  ```
+- **CUPS 端口**：cupsd 固定监听 `631`。确需修改时编辑 `./.etc/cupsd.conf` 中的 `Listen 631` 后重启容器（不推荐，IPP/AirPrint 生态默认按 631 工作）
+- 若坚持桥接模式（放弃网络打印机发现与 AirPrint 广播），可改回 `ports: ["你的CUPS端口:631", "你的Web端口:8080"]` 并删除 `network_mode: host` 与 `LISTEN_ADDR`
 
 ### 数据备份
 
@@ -505,39 +510,26 @@ docker compose up -d
 
 使用最新的 `docker-compose.yml`（volume 目录挂载 `/dev/bus/usb` + `device_cgroup_rules`）即可支持热插拔。若你的 Docker 环境不支持 `device_cgroup_rules`，改用 `privileged: true` 即可。
 
-### AirPrint 搜不到打印机？
+### AirPrint 搜不到打印机 / 发现不了局域网网络打印机？
 
-手机 / iPad 的 AirPrint 通过 mDNS（Bonjour）在局域网发现打印机。Docker 默认的 bridge 网络无法广播 mDNS 多播包，需要借助宿主机的 avahi-daemon 来广播（[Issue #94](https://github.com/hanxi/cups-web/issues/94)）。
+手机 / iPad 的 AirPrint 广播、以及 CUPS 发现局域网网络打印机（`dnssd://xxx._ipp._tcp.local`），都依赖 mDNS 组播（5353/udp）。Docker 默认的 bridge 网络下组播出不去也进不来，因此新版 `docker-compose.yml` 默认使用 `network_mode: host`，由容器内自启的 avahi-daemon 直接在局域网广播和发现（[Issue #107](https://github.com/hanxi/cups-web/issues/107)）。
 
-**方法一（推荐）：宿主机安装 avahi-daemon + 共享 D-Bus**
+排查步骤：
 
-1. 在宿主机上安装 avahi-daemon：
-   ```bash
-   # Debian / Ubuntu
-   sudo apt install avahi-daemon
-   sudo systemctl enable --now avahi-daemon
-   ```
-2. 确认 `docker-compose.yml` 中已挂载 D-Bus socket（最新版已包含）：
-   ```yaml
-   volumes:
-     - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
-   ```
-3. 重启容器：`docker compose up -d`
+1. **确认使用新版 compose**：必须有 `network_mode: host`、且**没有** `ports:` 和 `/run/dbus/system_bus_socket` 挂载。
+   > ⚠️ 旧版为借用宿主机 avahi 广播而挂载了宿主机 D-Bus socket（[Issue #94](https://github.com/hanxi/cups-web/issues/94)）。宿主机没装 avahi-daemon 时，该挂载反而让容器内自己的 dbus/avahi 起不来，发现与广播全部失效——升级时务必删掉这一行。
+2. **看容器日志**：`docker logs cups | grep -i 'dbus\|avahi'`。新版 entrypoint 在 dbus/avahi 启动失败时会打 `WARN`，按提示排查。
+3. **宿主机自装了 avahi-daemon？** 容器内 avahi 会与它抢 5353 端口而起不来。注意宿主机 avahi **无法**替容器内的 CUPS 广播或发现（容器与宿主机是两条独立的 D-Bus 总线），必须停掉宿主机侧：`sudo systemctl disable --now avahi-daemon`，然后重启容器。
+4. **路由器/交换机屏蔽组播**：部分 AP 开了「组播增强/IGMP 隔离」会丢 mDNS 包，尝试关闭或在同一 AP 下复测。
 
-原理：容器内的 CUPS 通过挂载的 D-Bus socket 与宿主机的 avahi-daemon 通信，由宿主机的 avahi 在局域网广播打印机服务，手机即可发现。
+验证容器内 avahi 是否正常工作：
 
-**方法二：使用 host 网络模式**
-
-将 `docker-compose.yml` 改为 `network_mode: host`（删掉 `ports:` 配置）：
-```yaml
-services:
-  cups:
-    image: hanxi/cups-web:latest
-    network_mode: host
-    # ... 其他配置不变，删掉 ports 部分
+```bash
+# 应能列出局域网打印机的 _ipp._tcp / _pdl-datastream._tcp 等服务
+docker exec cups avahi-browse -art
+# 应能解析出 .local 域名（依赖镜像内的 libnss-mdns）
+docker exec cups getent hosts CUPS.local
 ```
-
-容器直接使用宿主机网络栈，avahi 可以直接在局域网广播。缺点是无法自定义端口映射，CUPS 固定占用 631、Web 固定占用 8080。
 
 ### 安装的驱动丢失了？
 

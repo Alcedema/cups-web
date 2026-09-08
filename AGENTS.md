@@ -451,17 +451,20 @@ make docker-build   # AIO 镜像
 
 ### docker-compose
 
-单服务 `cups`（AIO），`image: hanxi/cups-web:latest`，端口 `631:631` + `1180:8080`。
+单服务 `cups`（AIO），`image: hanxi/cups-web:latest`，`network_mode: host`（mDNS 组播需要，CUPS 直接占用宿主 `631`，Web 由 `LISTEN_ADDR` 决定、默认 `:1180`，issue #107）。
 
 | 配置 | 为什么 |
 | --- | --- |
+| `network_mode: host` + `hostname: CUPS` | mDNS/DNS-SD 组播（5353/udp）桥接下出不去进不来：发现不了局域网网络打印机、AirPrint 广播不出去（issue #107）。avahi 以 `CUPS.local` 广播 |
+| `LISTEN_ADDR=:1180` | host 网络无端口映射，Web 直接监听宿主 1180，与旧桥接时代一致 |
 | `user: root` | cupsd / lpadmin / dpkg / 写系统路径 |
 | `security_opt: [apparmor:unconfined]` | PVE LXC AppArmor DENIED（issue #91） |
 | `./.etc:/etc/cups`、`./.data:/data`、`./.uploads:/uploads` | 持久化 |
 | **`./.drivers:/opt/cups-drivers/data`** | **驱动快照持久化**（删 = 重启丢驱动） |
 | `/dev/bus/usb:/dev/bus/usb` + `device_cgroup_rules` | USB 热插拔（issue #81） |
 | `/run/udev:/run/udev:ro` | libusb 设备属性（可选） |
-| `/run/dbus/system_bus_socket:/run/dbus/system_bus_socket` | 共享宿主机 D-Bus system bus socket，让 CUPS 通过宿主机 avahi 广播 AirPrint（issue #94） |
+
+> ⚠️ **不要挂载宿主 `/run/dbus/system_bus_socket`**：旧版为借宿主 avahi 广播 AirPrint 挂过它（issue #94），但宿主没装 avahi 时容器内自己的 dbus-daemon 会因 socket 路径被占而起不来，avahi 跟着失效（issue #107）。现已移除，host 网络下容器内自启 dbus + avahi 即可。
 
 ### Docker 构建
 

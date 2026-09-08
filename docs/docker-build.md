@@ -57,16 +57,20 @@ Eclipse Temurin 对 "Linux ARM 32-bit Hard-Float" 仅 JDK 8/11 有二进制，JD
 
 ## docker-compose 配置理由
 
-`docker-compose.yml` 现在只有**一个** `cups` 服务（原来是 `cups` + `web` 两个），`image: hanxi/cups-web:latest`，端口 `631:631`（CUPS）+ `1180:8080`（Web）。关键配置及其理由：
+`docker-compose.yml` 现在只有**一个** `cups` 服务（原来是 `cups` + `web` 两个），`image: hanxi/cups-web:latest`，`network_mode: host`——CUPS 直接占用宿主 `631`，Web 监听地址由 `LISTEN_ADDR` 环境变量决定（compose 默认 `:1180`，与旧桥接时代 `1180:8080` 映射保持一致）。关键配置及其理由：
 
 | 配置 | 为什么 |
 | --- | --- |
+| `network_mode: host` + `hostname: CUPS` | issue #107：mDNS/DNS-SD 依赖局域网组播（5353/udp），桥接模式下组播出不去也进不来——容器发现不了局域网网络打印机（`dnssd://…._ipp._tcp.local`），手机也搜不到 AirPrint。host 网络下容器内自启的 avahi 直接在局域网工作。代价：无端口映射、宿主自装 avahi 会抢 5353 |
+| `LISTEN_ADDR=:1180` | host 网络无端口映射，让 Web 直接监听宿主 1180，老用户书签 / 反代不用改（`cmd/server/main.go` 原生支持该环境变量） |
 | `user: root` | 要跑 cupsd / lpadmin / dpkg，还要往系统路径写驱动文件 |
 | `security_opt: [apparmor:unconfined]` | issue #91：PVE LXC 等环境下 `apparmor="DENIED" … comm="jobs.cgi"` 会导致打印失败；合并单容器后它同时也保护 LibreOffice / OFD 转换子进程 |
 | `./.etc:/etc/cups`、`./.data:/data`、`./.uploads:/uploads` | CUPS 配置 / 数据库 / 上传文件持久化 |
 | **`./.drivers:/opt/cups-drivers/data`** | **驱动快照持久化**。删掉这个卷 = 重启后丢失所有手动安装的第三方驱动，需要在 Web「驱动」页面重装一遍（见 [driver-management.md](driver-management.md)） |
 | `/dev/bus/usb:/dev/bus/usb` + `device_cgroup_rules: ['c 189:* rmw']` | issue #81：USB 打印机热插拔。`devices:` 是启动时一次性绑定，打印机"后开机"时宿主 udev 新建的节点不会传播进容器；改成目录 bind-mount 才能实时反映新节点 |
 | `/run/udev:/run/udev:ro` | 让 libusb 读到设备属性，改善识别（宿主无 `/run/udev` 时该挂载可删） |
+
+> ⚠️ **`/run/dbus/system_bus_socket` 挂载已删除**（issue #107，取代 issue #94 的"借宿主 avahi"方案）：宿主没装 avahi-daemon 时，挂进来的 socket 文件会占住路径，entrypoint 里容器自己的 `dbus-daemon --system --fork` 起不来（老代码被 `|| true` 静默吞掉），avahi 跟着失效。host 网络下容器内自启的 dbus + avahi 已能直接发现和广播，不需要宿主任何服务。
 
 ## CI/CD
 
