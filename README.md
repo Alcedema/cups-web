@@ -210,6 +210,9 @@ services:
       - /run/udev:/run/udev:ro
     device_cgroup_rules:
       - 'c 189:* rmw'
+    # 特权模式：ARM / 嵌入式平台上 libusb 需要完整 sysfs 访问才能枚举 USB
+    # 打印机（issue #110）。如果你确认 x86 平台不需要，可注释掉这行。
+    privileged: true
     restart: unless-stopped
 ```
 
@@ -396,7 +399,8 @@ Docker 默认卷映射：
 | `LISTEN_ADDR=:1180` | host 网络下没有端口映射，让 Web 直接监听宿主 `1180`，与旧桥接时代一致，书签 / 反代配置无需改动 |
 | `user: root` | 容器内要运行 cupsd、`lpadmin`、`dpkg`（驱动安装），还要往 `/usr/lib/cups`、`/usr/share/ppd` 等系统路径写驱动文件 |
 | `security_opt: [apparmor:unconfined]` | 解除 AppArmor 限制（[Issue #91](https://github.com/hanxi/cups-web/issues/91)）。PVE (Proxmox VE) LXC 等环境下会出现 `apparmor="DENIED"` 导致打印失败；单容器化后它同时也保护 LibreOffice / OFD 转换子进程不被拦截 |
-| `device_cgroup_rules: ['c 189:* rmw']` | 放开 USB 字符设备（major 189）的 cgroup 权限，配合 `/dev/bus/usb` 目录挂载实现 USB 打印机热插拔（[Issue #81](https://github.com/hanxi/cups-web/issues/81)）。若你的 Docker 环境不支持该字段，改用 `privileged: true` |
+| `device_cgroup_rules: ['c 189:* rmw']` | 放开 USB 字符设备（major 189）的 cgroup 权限（[Issue #81](https://github.com/hanxi/cups-web/issues/81)） |
+| `privileged: true` | 特权模式。ARM / 嵌入式平台（树莓派、Amlogic、各类 TV Box 跑 Armbian）上 libusb 需要完整 sysfs 才能枚举 USB 打印机（[Issue #110](https://github.com/hanxi/cups-web/issues/110)）。x86 平台若介意安全隔离可注释掉，仅靠上方 `device_cgroup_rules` 通常已足够 |
 
 ---
 
@@ -510,7 +514,7 @@ docker compose up -d
 
 ### 打印机后开机就识别不到？（USB 热插拔）
 
-使用最新的 `docker-compose.yml`（volume 目录挂载 `/dev/bus/usb` + `device_cgroup_rules`）即可支持热插拔。若你的 Docker 环境不支持 `device_cgroup_rules`，改用 `privileged: true` 即可。
+使用最新的 `docker-compose.yml` 即可支持热插拔（volume 目录挂载 `/dev/bus/usb` + `device_cgroup_rules` + `privileged: true`）。如果在 x86 平台介意安全隔离，可注释掉 `privileged: true`，仅靠 `device_cgroup_rules` 通常已足够。
 
 ### AirPrint 搜不到打印机 / 发现不了局域网网络打印机？
 

@@ -70,4 +70,19 @@ services:
       - /run/udev:/run/udev:ro
     device_cgroup_rules:
       - 'c 189:* rmw'
+    # ── 特权模式：USB 打印机发现（issue #110） ────────────────────────────
+    # 上面 device_cgroup_rules + /dev/bus/usb 挂载在 x86 平台通常足够让
+    # libusb 枚举 USB 打印机，但在部分 ARM / 嵌入式平台（Amlogic S905L、
+    # 树莓派、各类 TV Box 跑 Armbian 等）上，非特权容器中 /sys 是过滤视图，
+    # libusb 拿不到 sysfs 里的设备列表 → lpinfo -v 返回空 → CUPS 不知道
+    # 打印机存在，打印任务报 "Unable to open the initial device"。
+    #
+    # privileged: true 卸掉所有 cgroup 限制，让 libusb 能完整访问 sysfs，
+    # 在所有平台上可靠工作。代价是安全隔离减弱，但本项目本身就以 root 运行
+    # cupsd + dpkg + 驱动安装脚本，安全边界本来就不在容器层，而在"谁有
+    # admin 密码"——管理员密码 = 容器 root 权限（见 README 驱动上传安全说明）。
+    #
+    # 如果你非常确定自己的平台靠 device_cgroup_rules 就够用（绝大多数 x86），
+    # 可以注释掉这行来收紧一层；如果 USB 打印机 lpinfo -v 看不到，请启用它。
+    privileged: true
     restart: unless-stopped
