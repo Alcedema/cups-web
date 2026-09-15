@@ -54,6 +54,26 @@ if [ -f /etc/cups/cupsd.conf ] && ! grep -qiE '^[[:space:]]*ReadyPaperSizes' /et
     echo "[entrypoint] 已为存量配置追加 ReadyPaperSizes（A4 系列），让 AirPrint 面板能选到 A4（issue #82）"
 fi
 
+# ③ /etc/cups/ppd 权限对齐（issue #59）
+# ── 复现确认（容器实测，非推断）────────────────────────────────────────
+#   - 容器默认（非挂载卷）场景：cupsd（root）写出的 PPD 是 640 root:lp，
+#     lp 组本可读，不会报错。
+#   - 但 docker-compose 把宿主目录 bind-mount 到 /etc/cups 后，卷内 PPD 副本
+#     的 owner/group 来自宿主（group 通常不是容器内的 lp / gid=7，或文件是
+#     从别的环境迁移来的）。CUPS 处理任务时降权到 lp 去读 PPD，group 不匹配
+#     → lp 读不到，打印报
+#       "Failed to open PPD: /etc/cups/ppd/<printer>.ppd"。
+#   - 修复：cupsd 启动前把 ppd 目录与文件对齐到 root:lp + 组可读。
+#     chmod/chown 会写穿 bind-mount 改宿主 inode（已实测：宿主侧 owner 也
+#     变成 root:lp，容器内 lp 读取由 Permission denied 转为成功）。
+#   - 幂等：已是 root:lp 640 的文件不受影响；失败不阻塞启动。
+if [ -d /etc/cups/ppd ]; then
+    chown -R root:lp /etc/cups/ppd 2>/dev/null || true
+    chmod 775 /etc/cups/ppd 2>/dev/null || true
+    find /etc/cups/ppd -maxdepth 1 -name '*.ppd' -type f -exec chmod 640 {} + 2>/dev/null || true
+    echo "[entrypoint] 已对齐 /etc/cups/ppd 权限为 root:lp（组可读），修复挂载卷下降权后读不到 PPD 的问题（issue #59）"
+fi
+
 # ══════════════════════════════════════════════════════════════
 # 4. HP 1020 PPD Letter→A4 patch (from cups/entrypoint.sh)
 # ══════════════════════════════════════════════════════════════
