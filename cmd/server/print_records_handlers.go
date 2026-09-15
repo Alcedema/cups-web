@@ -481,6 +481,12 @@ func reprintHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 手动双面（奇/偶 或 偶数倒序）语义上必然单面输出，防止 CUPS pdftopdf
+	// 用空白页填补被过滤掉的另一面（issue #109）。
+	if req.PageSet == "odd" || req.PageSet == "even" || req.PageSet == "even-reverse" {
+		req.Duplex = false
+	}
+
 	var recordID int64
 	err = appStore.WithTx(r.Context(), false, func(tx *sql.Tx) error {
 		rec := store.PrintRecord{

@@ -265,6 +265,12 @@ func printHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 手动双面（奇/偶 或 偶数倒序）语义上必然单面输出：如果用户没在前端切回单面，
+	// 这里强制回落，避免 CUPS pdftopdf 用空白页填补被过滤掉的另一面（issue #109）。
+	if origPageSet == "odd" || origPageSet == "even" || origPageSet == "even-reverse" {
+		isDuplex = false
+	}
+
 	sess, _ := auth.GetSession(r)
 	var recordID int64
 

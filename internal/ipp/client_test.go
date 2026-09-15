@@ -63,7 +63,17 @@ func TestParsePageRange(t *testing.T) {
 // 没法方便地 mock。
 func buildJobMessage(opts PrintJobOptions) *goipp.Message {
 	req := goipp.NewRequest(goipp.DefaultVersion, goipp.OpPrintJob, 1)
-	if set := normalizePageSet(opts.PageSet); set != "" && set != "all" {
+	// 与 SendPrintJob 保持同样的 duplex/pageSet 互斥兜底（issue #109）。
+	isDuplex := opts.IsDuplex
+	if set := normalizePageSet(opts.PageSet); set == "odd" || set == "even" || set == "even-reverse" {
+		isDuplex = false
+	}
+	if isDuplex {
+		req.Job.Add(goipp.MakeAttribute("sides", goipp.TagKeyword, goipp.String("two-sided-long-edge")))
+	} else {
+		req.Job.Add(goipp.MakeAttribute("sides", goipp.TagKeyword, goipp.String("one-sided")))
+	}
+	if set := normalizePageSet(opts.PageSet); set != "" && set != "all" && set != "even-reverse" {
 		req.Job.Add(goipp.MakeAttribute("page-set", goipp.TagKeyword, goipp.String(set)))
 	}
 	return req
@@ -133,6 +143,32 @@ func TestSendPrintJob_PageSetNotLeakingIntoOperation(t *testing.T) {
 		if strings.EqualFold(a.Name, "page-set") {
 			t.Fatalf("page-set leaked into Operation group: %+v", a)
 		}
+	}
+}
+
+// TestSendPrintJob_PageSetForcesOneSided 覆盖 issue #109：当选择了奇/偶页手动
+// 双面时，即使 IsDuplex=true 也必须落成 sides=one-sided，避免 CUPS 用空白页
+// 填补被过滤掉的另一面而产生间隔空白页。
+func TestSendPrintJob_PageSetForcesOneSided(t *testing.T) {
+	cases := []struct {
+		name      string
+		opts      PrintJobOptions
+		wantSides string
+	}{
+		{"odd + duplex -> forced one-sided", PrintJobOptions{IsDuplex: true, PageSet: "odd"}, "one-sided"},
+		{"even + duplex -> forced one-sided", PrintJobOptions{IsDuplex: true, PageSet: "even"}, "one-sided"},
+		{"all + duplex -> two-sided", PrintJobOptions{IsDuplex: true, PageSet: "all"}, "two-sided-long-edge"},
+		{"empty + duplex -> two-sided", PrintJobOptions{IsDuplex: true, PageSet: ""}, "two-sided-long-edge"},
+		{"even-reverse + duplex -> forced one-sided", PrintJobOptions{IsDuplex: true, PageSet: "even-reverse"}, "one-sided"},
+		{"odd + one-sided stays one-sided", PrintJobOptions{IsDuplex: false, PageSet: "odd"}, "one-sided"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			msg := buildJobMessage(c.opts)
+			if got := findJobAttr(msg, "sides"); got != c.wantSides {
+				t.Errorf("sides = %q, want %q", got, c.wantSides)
+			}
+		})
 	}
 }
 

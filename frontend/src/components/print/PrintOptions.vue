@@ -125,7 +125,7 @@
             </UFormField>
 
             <!-- 页面子集（手动双面 / 分册排版） -->
-            <UFormField label="页面子集" hint="配合页面范围使用；手动双面可先打奇数页，翻面后再打偶数页">
+            <UFormField label="页面子集" :hint="pageSetHint">
               <div class="flex rounded-lg border border-muted overflow-hidden">
                 <label
                   v-for="item in pageSetItems"
@@ -133,7 +133,7 @@
                   class="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 cursor-pointer text-sm transition"
                   :class="pageSet === item.value ? 'bg-primary text-white font-medium' : 'hover:bg-elevated'"
                 >
-                  <input type="radio" :value="item.value" :checked="pageSet === item.value" class="sr-only" @change="$emit('update:pageSet', item.value)" />
+                  <input type="radio" :value="item.value" :checked="pageSet === item.value" class="sr-only" @change="onPageSetChange(item.value)" />
                   <UIcon :name="item.icon" class="w-3.5 h-3.5 shrink-0" />
                   <span class="text-xs whitespace-nowrap">{{ item.label }}</span>
                 </label>
@@ -345,6 +345,26 @@ function onScalePercentBlur() {
   const fixed = Number.isFinite(n) ? Math.min(400, Math.max(10, Math.round(n))) : 100
   if (fixed !== props.scalePercent) emit('update:scalePercent', fixed)
 }
+
+// 页面子集切换：odd / even 是"手动双面"用法，语义上必须单面输出；如果此时
+// 双面仍是 two-sided-*，CUPS pdftopdf 会用空白页填补被过滤掉的另一面，产生
+// 间隔空白页（issue #109）。选中奇/偶时联动把 duplex 拉回 one-sided，同时
+// 用 hint 告知用户。even-reverse 也一样：它由后端把偶数页 PDF 层重排后再送
+// CUPS，链路语义仍是单面输出，不能带双面。
+function onPageSetChange(val) {
+  emit('update:pageSet', val)
+  const manualDuplex = val === 'odd' || val === 'even' || val === 'even-reverse'
+  if (manualDuplex && props.duplex !== 'one-sided') {
+    emit('update:duplex', 'one-sided')
+  }
+}
+
+const pageSetHint = computed(() => {
+  if (props.pageSet === 'odd' || props.pageSet === 'even' || props.pageSet === 'even-reverse') {
+    return '手动双面：已自动切回单面输出。先打奇数页，翻纸后再选偶数页(倒序)打第二遍'
+  }
+  return '配合页面范围使用；手动双面可先打奇数页，翻面后再打偶数页'
+})
 
 function onPageRangeInput(val) {
   emit('update:pageRange', val)
