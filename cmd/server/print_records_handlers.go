@@ -553,7 +553,6 @@ func reprintHandler(w http.ResponseWriter, r *http.Request) {
 		PageRange:    req.PageRange,
 		PageSet:      pageSet,
 		Mirror:       req.Mirror,
-		Pages:        pages,
 
 		NumberUp:       req.NumberUp,
 		NumberUpLayout: req.NumberUpLayout,

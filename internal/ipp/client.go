@@ -27,7 +27,6 @@ type PrintJobOptions struct {
 	PageRange    string // e.g. "1-5 8 10-12"
 	PageSet      string // "all" | "odd" | "even" – CUPS page-set filter (typical use: manual duplex)
 	Mirror       bool   // mirror / horizontal flip
-	Pages        int    // total document pages (for job-impressions hint)
 
 	// N-up (multiple document pages per physical sheet), handled natively by the
 	// CUPS pdftopdf filter (Issue #78).
@@ -169,16 +168,10 @@ func SendPrintJob(printerURI string, r io.Reader, mime string, username string, 
 		}
 	}
 
-	// Job impressions hint – tells CUPS the expected page count so that its
-	// job-accounting display matches the actual document instead of relying
-	// on the filter-reported count (which may be off by one).
-	if opts.Pages > 0 {
-		impressions := opts.Pages
-		if copies > 1 {
-			impressions = opts.Pages * copies
-		}
-		req.Job.Add(goipp.MakeAttribute("job-impressions", goipp.TagInteger, goipp.Integer(impressions)))
-	}
+	// 不主动发 job-impressions：这个属性只是客户端提示，pdftopdf
+	// 会在过滤后用真实渲染页数覆盖它；早先的 819ae20 把它作为"防 off-by-one"
+	// 兜底反而让 CUPS 后台稳定多算一张（issue #20）。让 CUPS 走滤镜自己
+	// 数出来的 job-impressions-completed 更准。
 
 	payload, err := req.EncodeBytes()
 	if err != nil {

@@ -349,7 +349,6 @@ func printHandler(w http.ResponseWriter, r *http.Request) {
 		PageRange:    pageRange,
 		PageSet:      pageSet,
 		Mirror:       mirror,
-		Pages:        pages,
 
 		NumberUp:       numberUp,
 		NumberUpLayout: numberUpLayout,
