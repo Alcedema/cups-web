@@ -16,10 +16,12 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
+	"unicode"
 
 	"github.com/phpdave11/gofpdf"
 	"github.com/phpdave11/gofpdf/contrib/gofpdi"
 	"golang.org/x/image/draw"
+	rscpdf "rsc.io/pdf"
 )
 
 const (
@@ -27,6 +29,11 @@ const (
 	dashLineLenMM     = 3.0
 	dashLineGapMM     = 2.0
 	dashLineGrayLevel = 180
+	// invoiceSparsePageThreshold 是发票 2-up 合并时判定"稀疏附加页"（如滴滴 PDF
+	// 尾部的品牌页/水印页）的阈值：同一 PDF 的非首页若可提取文本 rune 数少于该
+	// 阈值，则视为附加页跳过。30 字符（≈15 汉字）远低于任何正常发票单行文本量，
+	// 又足以过滤"didi"/"滴滴出行"等极简附加页（issue #93）。
+	invoiceSparsePageThreshold = 30
 )
 
 type composePage struct {
@@ -52,6 +59,7 @@ func composeInvoice2Up(ctx context.Context, fileHeaders []*multipart.FileHeader)
 		cleanup()
 		return "", nil, err
 	}
+	pages = filterInvoiceSparsePages(pages, invoiceSparsePageThreshold)
 	if len(pages) == 0 {
 		cleanup()
 		return "", nil, errors.New("no pages to compose")
@@ -529,6 +537,83 @@ func renderPDFToImages(ctx context.Context, pdfPath string, numPages int, tmpDir
 		pages = append(pages, composePage{imgPath: outPath, imgCfg: cfg})
 	}
 	return pages, nil
+}
+
+// pdfPageTextLenFn 返回 PDF 指定页可提取文本的 rune 数。抽成变量便于测试注入。
+// rsc.io/pdf 对某些畸形 PDF 会 panic，包装层用 recover 兜底，失败视为"未知长度"
+// 返回 -1，调用方按"保留该页"处理。
+var pdfPageTextLenFn = pdfPageTextRuneCount
+
+func pdfPageTextRuneCount(path string, pageNo int) (n int, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			n = -1
+			err = fmt.Errorf("pdf text panic: %v", r)
+		}
+	}()
+	doc, err := rscpdf.Open(path)
+	if err != nil {
+		return -1, err
+	}
+	if pageNo < 1 || pageNo > doc.NumPage() {
+		return -1, fmt.Errorf("page %d out of range", pageNo)
+	}
+	page := doc.Page(pageNo)
+	if page.V.IsNull() {
+		return -1, fmt.Errorf("page %d is null", pageNo)
+	}
+	content := page.Content()
+	count := 0
+	for _, t := range content.Text {
+		for _, r := range t.S {
+			if unicode.IsSpace(r) {
+				continue
+			}
+			count++
+		}
+	}
+	return count, nil
+}
+
+// filterInvoiceSparsePages 过滤发票 2-up 合并中的"稀疏附加页"。同一 PDF 的首页
+// 无条件保留；从第 2 页起，若可提取文本的非空白 rune 数少于 threshold，视为附
+// 加页（如滴滴 PDF 尾部只有"didi"字样的品牌页）并跳过。文本提取失败/未知时保
+// 留该页，避免误杀（issue #93）。
+//
+// 图片页（imgPath != ""）不参与过滤——扫描图像发票天然无文本流。
+func filterInvoiceSparsePages(pages []composePage, threshold int) []composePage {
+	if len(pages) == 0 {
+		return pages
+	}
+	// firstPageSeen 记录每个源 PDF 是否已经至少保留了一页（一般是第 1 页；用 map
+	// 而非依赖 pageNo==1，是因为 pageNo 语义是"源 PDF 中的页码"，且我们只想对
+	// "同一 PDF 内的后续页"启用启发式，而不是全局第 1 页）。
+	firstPageSeen := make(map[string]bool)
+	filtered := make([]composePage, 0, len(pages))
+	for _, p := range pages {
+		if p.imgPath != "" || p.pdfPath == "" {
+			filtered = append(filtered, p)
+			continue
+		}
+		if !firstPageSeen[p.pdfPath] {
+			firstPageSeen[p.pdfPath] = true
+			filtered = append(filtered, p)
+			continue
+		}
+		n, err := pdfPageTextLenFn(p.pdfPath, p.pageNo)
+		if err != nil || n < 0 {
+			// 无法判定：保留该页
+			filtered = append(filtered, p)
+			continue
+		}
+		if n < threshold {
+			log.Printf("[compose] skip sparse page %s p%d (text len=%d < %d)",
+				filepath.Base(p.pdfPath), p.pageNo, n, threshold)
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+	return filtered
 }
 
 func copyFile(src, dst string) error {
