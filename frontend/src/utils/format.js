@@ -50,23 +50,6 @@ export function formatDurationSeconds(totalSeconds) {
   return `${totalSeconds}秒`
 }
 
-// formatStateDuration 计算从 ISO 时间字符串到现在经过了多久
-export function formatStateDuration(isoStr) {
-  if (!isoStr) return '未知'
-  const past = new Date(isoStr)
-  if (isNaN(past.getTime())) return '未知'
-  const diffMs = Date.now() - past.getTime()
-  if (diffMs < 0) return '未知'
-  const totalSeconds = Math.floor(diffMs / 1000)
-  const d = Math.floor(totalSeconds / 86400)
-  const h = Math.floor((totalSeconds % 86400) / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  if (d > 0) return `${d}天${h}小时`
-  if (h > 0) return `${h}小时${m}分钟`
-  if (m > 0) return `${m}分钟`
-  return `${totalSeconds}秒`
-}
-
 export function statusColor(status) {
   const map = { queued: 'info', printed: 'success', failed: 'error', cancelled: 'neutral' }
   return map[status] || 'neutral'
