@@ -290,7 +290,10 @@ const copies = ref(1)
 const paperSize = ref('A4')
 const paperType = ref('plain')
 const mediaSource = ref('auto')
-const printScaling = ref('fit')
+// 默认走 IPP 的 `auto`：文档不缩放、图片自适应，最贴近 CUPS 原生行为。
+// 早先默认 `fit` 会把 PDF 内容拉伸至打印机纸张（尤其上传 PDF 尺寸 ≠ 目标
+// paperSize 时），字体变大、多出一页（issue #47）。用户需要撑满时仍可手选 fit。
+const printScaling = ref('auto')
 const scalePercent = ref(100)
 const pageRange = ref('')
 const pageSet = ref('all')
@@ -1024,7 +1027,7 @@ function switchMode(mode) {
     paperSize.value = 'A4'
   } else {
     isColor.value = true
-    printScaling.value = 'fit'
+    printScaling.value = 'auto'
     scalePercent.value = 100
   }
 }

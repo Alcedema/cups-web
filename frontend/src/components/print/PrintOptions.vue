@@ -178,7 +178,7 @@ const props = defineProps({
   paperType: { type: String, default: 'plain' },
   mediaSource: { type: String, default: 'auto' },
   mediaSourceSupported: { type: Array, default: () => [] },
-  printScaling: { type: String, default: 'fit' },
+  printScaling: { type: String, default: 'auto' },
   scalePercent: { type: Number, default: 100 },
   pageRange: { type: String, default: '' },
   pageSet: { type: String, default: 'all' },

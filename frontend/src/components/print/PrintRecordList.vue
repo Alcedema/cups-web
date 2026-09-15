@@ -150,7 +150,7 @@ function defaultReprintForm() {
     paperSize: 'A4',
     paperType: 'plain',
     mediaSource: 'auto',
-    printScaling: 'fit',
+    printScaling: 'auto',
     scalePercent: 100,
     pageRange: '',
     pageSet: 'all',

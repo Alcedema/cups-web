@@ -75,7 +75,7 @@ const props = defineProps({
   paperDimText: { type: String, default: '' },
   paperPreviewStyle: { type: Object, default: () => ({}) },
   watermarkText: { type: String, default: '' },
-  printScaling: { type: String, default: 'fit' },
+  printScaling: { type: String, default: 'auto' },
   scalePercent: { type: Number, default: 100 }
 })
 
