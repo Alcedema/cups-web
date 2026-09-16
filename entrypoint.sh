@@ -176,6 +176,53 @@ if command -v ipp-usb >/dev/null 2>&1; then
 fi
 
 # ══════════════════════════════════════════════════════════════
+# 6b. 外部 CUPS 冲突检测（issue #79）
+# ══════════════════════════════════════════════════════════════
+# 场景：单容器镜像 (cups-web + 内嵌 cupsd) 与 host 网络模式配合时，如果
+# 宿主机自己也装了 cupsd 并已在跑（用户在飞牛 OS 命令行手动装过 CUPS，
+# 或宿主本身自带并启用的 CUPS），宿主的 cupsd 已经占了 631/tcp。
+# 容器内的 cupsd 拉起时 bind 631 会失败 → watchdog 短命重试到 fast-fails
+# 上限后放弃 → 每次容器启动都刷一屏错误日志；此外 restore-drivers 里的
+# dpkg -i / lpadmin 若配合失败可能拖慢启动。
+#
+# 检测到 631 已被**容器外**的进程占用时，直接让路：跳过内嵌 cupsd 与
+# 后续依赖 cupsd 的探活/AirPrint 修补，前台 cups-web 依旧启动并通过
+# CUPS_HOST=localhost:631 走宿主 cupsd。此时 host network 让二者共处
+# 同一网络命名空间，功能上等价于 CUPS_HOST=<宿主IP>。
+#
+# ── 判定方式 ──────────────────────────────────────────────────
+# 只判"当前是否已经有进程 listen 在 631"，不区分是不是自己的 cupsd——
+# 因为 6b 是在 cupsd 启动**之前**跑的，容器内还没有本地 cupsd 在监听，
+# 任何监听者都是外部（宿主）的。优先 ss，fallback 到 netstat，再 fallback
+# 到 bash /dev/tcp 尝试连接。任何一步判定"被占用"就跳过内嵌 cupsd。
+# 检测本身失败（工具都不可用）则保守假设"未被占用"，走原路径。
+SKIP_CUPSD=0
+_port631_in_use() {
+    if command -v ss >/dev/null 2>&1; then
+        ss -Hltn 'sport = :631' 2>/dev/null | grep -q ':631'
+        return $?
+    fi
+    if command -v netstat >/dev/null 2>&1; then
+        netstat -ltn 2>/dev/null | grep -qE '[[:space:]]:::631[[:space:]]|[[:space:]]0\.0\.0\.0:631[[:space:]]|[[:space:]]127\.0\.0\.1:631[[:space:]]'
+        return $?
+    fi
+    # bash 内置 /dev/tcp：能连上说明有人 listen；连不上视为空闲。
+    # 用 timeout 兜底避免个别环境 /dev/tcp 阻塞。
+    if timeout 1 bash -c '</dev/tcp/127.0.0.1/631' 2>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+if _port631_in_use; then
+    SKIP_CUPSD=1
+    export CUPS_HOST="${CUPS_HOST:-localhost:631}"
+    echo "[entrypoint] WARN: 检测到 631/tcp 已被宿主机 cupsd 占用（host 网络模式下等同于容器外 CUPS 在跑）。"
+    echo "[entrypoint] WARN: 跳过内嵌 cupsd 启动，cups-web 将通过 CUPS_HOST=${CUPS_HOST} 使用宿主机 CUPS（issue #79）。"
+    echo "[entrypoint] WARN: 若你希望改用容器内 cupsd，请先停掉宿主机的 cups 服务再重启本容器。"
+fi
+
+# ══════════════════════════════════════════════════════════════
 # 7. Start cupsd in background with auto-restart watchdog
 # ══════════════════════════════════════════════════════════════
 # ── 为什么 cupsd 必须在 watchdog 子 shell **内部**前台启动 ────────────────
@@ -199,6 +246,7 @@ fi
 # 只要有一次存活超过阈值（说明是偶发崩溃而非配置问题）就把计数器清零。
 CUPSD_MIN_UPTIME=5
 CUPSD_MAX_FAST_FAILS=5
+if [ "$SKIP_CUPSD" != "1" ]; then
 (
     fast_fails=0
     while true; do
@@ -224,14 +272,19 @@ CUPSD_MAX_FAST_FAILS=5
         sleep 2
     done
 ) &
+fi
 
 # ══════════════════════════════════════════════════════════════
 # 8. Wait for cupsd to be ready (max 30s)
 # ══════════════════════════════════════════════════════════════
+# 跳过内嵌 cupsd 时（见 6b），本地不会启动 cupsd；此时 lpstat -r 走 IPP
+# 打到宿主 cupsd 会成功但意义不大，直接跳过省 30s 等待窗口。
+if [ "$SKIP_CUPSD" != "1" ]; then
 for i in $(seq 1 30); do
     lpstat -r >/dev/null 2>&1 && break
     sleep 1
 done
+fi
 
 # ══════════════════════════════════════════════════════════════
 # 8b. PdftopsRenderer: PDF→PostScript 渲染器改用 Ghostscript (issue #105)
@@ -254,6 +307,9 @@ fi
 # ② 对所有已存在的打印机队列设置 pdftops-renderer=gs
 #    lpoptions -p NAME -o pdftops-renderer=gs 写入 per-printer 默认选项，
 #    对手动通过 CUPS Web UI / lpadmin 添加的本地队列生效。
+#    跳过内嵌 cupsd 时（issue #79），lpoptions 会打到宿主 cupsd —— 不能
+#    擅自修改用户宿主机上的打印队列配置，整段短路。
+if [ "$SKIP_CUPSD" != "1" ]; then
 (
     set +x
     for p in $(lpstat -e 2>/dev/null); do
@@ -310,6 +366,7 @@ fi
         done
     fi
 ) &
+fi   # end: SKIP_CUPSD 保护 8b/9 两段——跳过内嵌 cupsd 时不改宿主队列（issue #79）
 
 # ══════════════════════════════════════════════════════════════
 # 10. Start cups-web as foreground process (PID 1)
