@@ -171,6 +171,38 @@
           @click="composeAndPreview"
         >合并预览</UButton>
 
+        <!-- 文字速印(issue #70):粘贴文字直接打,不必先建 .txt 上传 -->
+        <UCard v-if="printMode === 'text'" :ui="{ body: 'p-3 sm:p-4' }">
+          <div class="space-y-3">
+            <UTextarea
+              v-model="quickText"
+              :rows="10"
+              placeholder="在此粘贴要打印的文字…"
+              class="w-full"
+              :disabled="converting || printing"
+            />
+            <div class="flex items-center justify-between gap-2 text-xs text-muted">
+              <span>{{ quickText.length }} 字符</span>
+              <UButton
+                v-if="quickText"
+                variant="ghost"
+                size="xs"
+                icon="i-lucide-x"
+                :disabled="converting || printing"
+                @click="quickText = ''"
+              >清空</UButton>
+            </div>
+            <UButton
+              variant="outline"
+              size="sm"
+              icon="i-lucide-file-text"
+              :loading="converting"
+              :disabled="!quickText.trim() || converting || printing"
+              @click="convertQuickText"
+            >转换预览</UButton>
+          </div>
+        </UCard>
+
         <!-- 多图片列表（仅标准模式） -->
         <UCard v-if="printMode === 'standard' && selectedImages.length > 1">
           <template #header>
@@ -411,9 +443,13 @@ const pageBorder = ref('none')
 const printMode = ref(localStorage.getItem('print_mode') || 'standard')
 const printModeItems = [
   { label: '标准打印', value: 'standard', icon: 'i-lucide-file-text' },
+  { label: '文字速印', value: 'text', icon: 'i-lucide-clipboard-type' },
   { label: '发票打印', value: 'invoice', icon: 'i-lucide-receipt' },
   { label: '身份证打印', value: 'id_card', icon: 'i-lucide-id-card' }
 ]
+// 文字速印(issue #70):用户直接粘贴一段文字就能打,省去先建 .txt 再上传的步骤。
+// 内容用 File 包装喂给现有 processFile 流程,后端已支持 fileKindText。
+const quickText = ref('')
 const invoiceFiles = ref([])
 const invoiceDragging = ref(false)
 const invoiceInput = ref(null)
@@ -1295,6 +1331,20 @@ function clearModeState() {
   idCardBackPreview.value = ''
   idCardPaper.value = 'A4'
   composing.value = false
+  quickText.value = ''
+}
+
+// 文字速印(issue #70):把 textarea 里的字符串包成一个 text/plain 的 File,
+// 直接喂给现有 processFile → 走标准的 convert→preview→uploadAndPrint 流程,
+// 后端的 fileKindText / convertTextToPDF 已经能处理这类输入。
+async function convertQuickText() {
+  const text = quickText.value
+  if (!text.trim()) return
+  const filename = `quick-print-${Date.now()}.txt`
+  const f = new File([text], filename, { type: 'text/plain' })
+  processFile(f)
+  // processFile 内部把 selectedFile 设好之后,再触发一次 PDF 转换预览。
+  await convertToPdf()
 }
 
 function onInvoiceDrop(e) {
