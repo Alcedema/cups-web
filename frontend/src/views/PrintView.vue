@@ -1210,8 +1210,49 @@ function onPrinterChange() {
   loadPrinterInfo()
 }
 
+// 加载打印机列表(issue #50)。silent=true 时不弹 toast,专供 refreshAll 使用;
+// 若当前选中的打印机在最新列表里仍然存在就保留,否则回退到列表第一台。
+async function loadPrinters(silent = false) {
+  try {
+    const resp = await apiFetch('/api/printers', {}, () => emit('logout'))
+    if (!resp.ok) {
+      if (!silent && resp.status !== 401) {
+        toast.add({ title: '加载打印机失败', description: await readError(resp), color: 'error' })
+      }
+      return
+    }
+    const list = (await resp.json()) || []
+    printers.value = list
+    if (list.length === 0) {
+      printer.value = ''
+      return
+    }
+    // 首次进入:优先按 localStorage 恢复上次选择;refreshAll 场景下:若当前选中的
+    // 打印机仍在列表里就保留(避免刷新时把用户已选的下拉重置)。
+    const current = printer.value
+    if (current && list.some(p => p.uri === current)) {
+      return
+    }
+    const last = localStorage.getItem('last_printer')
+    if (last && list.some(p => p.uri === last)) {
+      printer.value = last
+    } else {
+      printer.value = list[0].uri
+    }
+  } catch (e) {
+    if (!silent) {
+      toast.add({ title: '加载打印机失败', description: e.message, color: 'error' })
+    }
+  }
+}
+
 async function refreshAll() {
   refreshing.value = true
+  // 打印机列表也一并刷新(issue #50):打印机被拔走再插回、或在 CUPS 631 页面
+  // 重新添加队列后,用户无需 F5 或退出重进,点一下"刷新"就能重新拉到最新列表。
+  // 先拉打印机列表 —— 当前选中的可能已经消失,loadPrinters 会重新选一台,
+  // 之后再去查这台的详情/记录才有意义。
+  await loadPrinters(true)
   await Promise.all([loadPrintRecords(true), loadPrinterInfo(true)])
   refreshing.value = false
 }
@@ -1345,21 +1386,8 @@ let printerInfoTimer = null
 
 // ─── 生命周期 ─────────────────────────────────────────────
 onMounted(async () => {
-  try {
-    const resp = await apiFetch('/api/printers', {}, () => emit('logout'))
-    if (resp.ok) {
-      printers.value = await resp.json()
-      const last = localStorage.getItem('last_printer')
-      if (last && printers.value.some(p => p.uri === last)) {
-        printer.value = last
-      } else if (printers.value.length > 0) {
-        printer.value = printers.value[0].uri
-      }
-      if (printer.value) loadPrinterInfo()
-    }
-  } catch (e) {
-    toast.add({ title: '加载打印机失败', description: e.message, color: 'error' })
-  }
+  await loadPrinters()
+  if (printer.value) loadPrinterInfo()
 
   await loadPrintRecords()
   recordsTimer = setInterval(() => loadPrintRecords(true), 5000)
