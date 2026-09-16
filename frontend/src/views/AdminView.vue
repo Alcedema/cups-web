@@ -103,6 +103,18 @@
         </div>
       </div>
       <div class="text-sm text-muted mt-2">自动清理会在设定天数后删除过期打印记录与文件。"立即清理"将删除所有打印记录和文件。关闭"保存打印历史"后，新的打印任务将不再产生记录。页数/大小上限用于阻止超规格文件占用打印机，0 表示不限制。</div>
+
+      <div class="mt-4 pt-4 border-t border-default">
+        <label class="block text-sm font-medium mb-1">自定义 CSS</label>
+        <UTextarea
+          v-model="settings.customCss"
+          :rows="6"
+          placeholder="/* 例如：调整主题色、字号、按钮渐变等；留空则不注入 */"
+          class="w-full font-mono text-xs"
+          :maxlength="32768"
+        />
+        <div class="text-xs text-muted mt-1">保存后立即生效，所有登录页与主界面都会应用（上限 32KB）。留空即恢复默认样式。</div>
+      </div>
     </UCard>
 
     <UModal v-model:open="showDeleteModal">
@@ -154,7 +166,7 @@ const form = ref({
 })
 const printFilters = ref({ username: '', start: '', end: '' })
 const printRecords = ref([])
-const settings = ref({ retentionDays: '', saveHistory: true, maxPagesPerJob: '0', maxUploadMB: '0' })
+const settings = ref({ retentionDays: '', saveHistory: true, maxPagesPerJob: '0', maxUploadMB: '0', customCss: '' })
 const showCleanupConfirm = ref(false)
 
 const savingUser = ref(false)
@@ -339,6 +351,7 @@ async function loadSettings() {
   // 后端以字节存储，前端 UI 用 MB 展示（1 MB = 1024*1024 B）。
   const bytes = Number(data.maxUploadBytes || 0)
   settings.value.maxUploadMB = String(bytes > 0 ? Math.round(bytes / (1024 * 1024)) : 0)
+  settings.value.customCss = typeof data.customCss === 'string' ? data.customCss : ''
 }
 
 async function triggerCleanup() {
@@ -379,7 +392,8 @@ async function saveSettings() {
       retentionDays: parseInt(settings.value.retentionDays || '0', 10),
       saveHistory: settings.value.saveHistory,
       maxPagesPerJob: maxPages,
-      maxUploadBytes: maxMB * 1024 * 1024
+      maxUploadBytes: maxMB * 1024 * 1024,
+      customCss: settings.value.customCss || ''
     }
     const resp = await fetch('/api/admin/settings', {
       method: 'PUT',
@@ -398,6 +412,13 @@ async function saveSettings() {
     }
     toast.add({ title: '保存成功', description: '系统设置已更新', color: 'success', icon: 'i-lucide-check-circle' })
     await loadSettings()
+    // 立即把新的自定义 CSS 应用到当前页面，避免管理员必须手动 reload（Issue #57）。
+    const el = document.getElementById('app-custom-css')
+    if (el || settings.value.customCss) {
+      const style = el || Object.assign(document.createElement('style'), { id: 'app-custom-css' })
+      if (!el) document.head.appendChild(style)
+      style.textContent = settings.value.customCss || ''
+    }
   } finally {
     savingSettings.value = false
   }

@@ -44,11 +44,17 @@ type adminUserResponse struct {
 }
 
 type settingsPayload struct {
-	RetentionDays  *int64 `json:"retentionDays"`
-	SaveHistory    *bool  `json:"saveHistory"`
-	MaxPagesPerJob *int64 `json:"maxPagesPerJob"`
-	MaxUploadBytes *int64 `json:"maxUploadBytes"`
+	RetentionDays  *int64  `json:"retentionDays"`
+	SaveHistory    *bool   `json:"saveHistory"`
+	MaxPagesPerJob *int64  `json:"maxPagesPerJob"`
+	MaxUploadBytes *int64  `json:"maxUploadBytes"`
+	CustomCSS      *string `json:"customCss"`
 }
+
+// customCSSMaxLen 是自定义 CSS 的字节上限（32 KiB）。
+// 管理员错手贴入巨量数据（比如把整个 tailwind.css 复制进来）会拖累每次登录页
+// 的公开设置接口，也会撑大 SQLite 单行，这里给一个宽松但不无限的上限。
+const customCSSMaxLen = 32 * 1024
 
 func adminListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var resp []adminUserResponse
@@ -237,6 +243,7 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var saveHistory int64
 	var maxPages int64
 	var maxBytes int64
+	var customCSS string
 	err := appStore.WithTx(r.Context(), true, func(tx *sql.Tx) error {
 		val, err := store.GetSettingInt(r.Context(), tx, store.SettingRetentionDays, 0)
 		if err != nil {
@@ -258,6 +265,11 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		maxBytes = mb
+		css, err := store.GetSettingString(r.Context(), tx, store.SettingCustomCSS, "")
+		if err != nil {
+			return err
+		}
+		customCSS = css
 		return nil
 	})
 	if err != nil {
@@ -269,6 +281,22 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		"saveHistory":    saveHistory != 0,
 		"maxPagesPerJob": maxPages,
 		"maxUploadBytes": maxBytes,
+		"customCss":      customCSS,
+	})
+}
+
+// publicSettingsHandler 返回登录前也需要展示的少量前端可读设置（目前只有 customCss）。
+// 未登录用户也会命中登录页/主界面样式，所以必须走公开接口而不是 /api/admin/settings。
+func publicSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	var customCSS string
+	_ = appStore.WithTx(r.Context(), true, func(tx *sql.Tx) error {
+		if v, err := store.GetSettingString(r.Context(), tx, store.SettingCustomCSS, ""); err == nil {
+			customCSS = v
+		}
+		return nil
+	})
+	writeJSON(w, map[string]interface{}{
+		"customCss": customCSS,
 	})
 }
 
@@ -309,6 +337,15 @@ func adminUpdateSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				return errors.New("invalid maxUploadBytes")
 			}
 			if err := store.SetSettingInt(r.Context(), tx, store.SettingMaxUploadBytes, *payload.MaxUploadBytes); err != nil {
+				return err
+			}
+		}
+		if payload.CustomCSS != nil {
+			css := *payload.CustomCSS
+			if len(css) > customCSSMaxLen {
+				return errors.New("customCss too long")
+			}
+			if err := store.SetSettingString(r.Context(), tx, store.SettingCustomCSS, css); err != nil {
 				return err
 			}
 		}

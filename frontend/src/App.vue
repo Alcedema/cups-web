@@ -173,6 +173,32 @@ async function loadVersion() {
   }
 }
 
+// 自定义 CSS 注入（Issue #57）：管理员在设置里贴一段 CSS，登录前也应生效
+// （登录页也是应用的一部分），因此走公开接口。用 <style id="app-custom-css">
+// 作为幂等的注入点，保存后可以随时刷新样式而不用 reload 整页。
+async function loadCustomCSS() {
+  try {
+    const resp = await fetch('/api/public-settings')
+    if (!resp.ok) return
+    const data = await resp.json()
+    if (data && typeof data.customCss === 'string') {
+      applyCustomCSS(data.customCss)
+    }
+  } catch (e) {
+    // 自定义样式属于装饰性功能，接口挂了不该阻塞主界面
+  }
+}
+
+function applyCustomCSS(css) {
+  let el = document.getElementById('app-custom-css')
+  if (!el) {
+    el = document.createElement('style')
+    el.id = 'app-custom-css'
+    document.head.appendChild(el)
+  }
+  el.textContent = css || ''
+}
+
 async function loadSession() {
   try {
     const resp = await fetch('/api/session', { credentials: 'include' })
@@ -221,5 +247,6 @@ onMounted(() => {
   detectOS()
   loadSession()
   loadVersion()
+  loadCustomCSS()
 })
 </script>

@@ -20,6 +20,7 @@ const (
 	SettingSaveHistory    = "save_history"
 	SettingMaxPagesPerJob = "max_pages_per_job"
 	SettingMaxUploadBytes = "max_upload_bytes"
+	SettingCustomCSS      = "custom_css"
 )
 
 type Store struct {

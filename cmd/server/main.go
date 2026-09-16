@@ -78,6 +78,8 @@ func main() {
 	// 公开的版本接口：前端在登录页与主界面 footer 上展示，
 	// 用户二进制覆盖升级后无需登录即可确认当前运行版本（Issue #26）。
 	api.HandleFunc("/version", VersionHandler).Methods("GET")
+	// 公开的前端可读设置：登录前也要用来渲染，比如管理员配置的自定义 CSS（Issue #57）。
+	api.HandleFunc("/public-settings", publicSettingsHandler).Methods("GET")
 
 	protected := api.PathPrefix("").Subrouter()
 	protected.Use(middleware.RequireSession)
