@@ -27,8 +27,14 @@ type printResp struct {
 }
 
 func printHandler(w http.ResponseWriter, r *http.Request) {
+	maxPages, _ := getPrintLimits(r.Context())
+	applyUploadLimit(w, r)
 	// Expect multipart form
 	if err := r.ParseMultipartForm(512 << 20); err != nil {
+		if isMaxBytesError(err) {
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "文件超出管理员设置的大小上限")
+			return
+		}
 		writeJSONError(w, http.StatusBadRequest, "invalid multipart form")
 		return
 	}
@@ -229,6 +235,14 @@ func printHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if printCleanup != nil {
 		defer printCleanup()
+	}
+
+	// 页数硬上限（Issue #72）：0=不限；超过则拒绝，422 表示"内容合法但被业务规则拒绝"。
+	if maxPages > 0 && int64(pages) > maxPages {
+		_ = os.Remove(storedAbs)
+		writeJSONError(w, http.StatusUnprocessableEntity,
+			"文件页数超出管理员设置的上限")
+		return
 	}
 
 	if watermarkText != "" && printMime == "application/pdf" {

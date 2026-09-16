@@ -12,8 +12,13 @@ import (
 )
 
 func convertHandler(w http.ResponseWriter, r *http.Request) {
+	applyUploadLimit(w, r)
 	// Expect multipart form
 	if err := r.ParseMultipartForm(512 << 20); err != nil {
+		if isMaxBytesError(err) {
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "文件超出管理员设置的大小上限")
+			return
+		}
 		http.Error(w, "invalid multipart form", http.StatusBadRequest)
 		return
 	}

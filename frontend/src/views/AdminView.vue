@@ -84,17 +84,25 @@
           <UInput type="number" step="1" v-model="settings.retentionDays" placeholder="例如 30" />
         </div>
         <div>
+          <label class="block text-sm font-medium mb-1">单个任务最大页数</label>
+          <UInput type="number" step="1" min="0" v-model="settings.maxPagesPerJob" placeholder="0 表示不限" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">单个文件最大大小 (MB)</label>
+          <UInput type="number" step="1" min="0" v-model="settings.maxUploadMB" placeholder="0 表示不限" />
+        </div>
+        <div>
           <label class="flex items-center gap-2 cursor-pointer h-9">
             <UCheckbox v-model="settings.saveHistory" />
             <span class="text-sm">保存打印历史</span>
           </label>
         </div>
-        <div class="flex items-end gap-2 md:col-span-2">
+        <div class="flex items-end gap-2 md:col-span-4">
           <UButton color="primary" @click="saveSettings" icon="i-lucide-save" :loading="savingSettings" :disabled="savingSettings">保存设置</UButton>
           <UButton variant="outline" @click="showCleanupConfirm = true" icon="i-lucide-trash-2" :loading="cleaningUp" :disabled="cleaningUp">立即清理</UButton>
         </div>
       </div>
-      <div class="text-sm text-muted mt-2">自动清理会在设定天数后删除过期打印记录与文件。"立即清理"将删除所有打印记录和文件。关闭"保存打印历史"后，新的打印任务将不再产生记录。</div>
+      <div class="text-sm text-muted mt-2">自动清理会在设定天数后删除过期打印记录与文件。"立即清理"将删除所有打印记录和文件。关闭"保存打印历史"后，新的打印任务将不再产生记录。页数/大小上限用于阻止超规格文件占用打印机，0 表示不限制。</div>
     </UCard>
 
     <UModal v-model:open="showDeleteModal">
@@ -146,7 +154,7 @@ const form = ref({
 })
 const printFilters = ref({ username: '', start: '', end: '' })
 const printRecords = ref([])
-const settings = ref({ retentionDays: '', saveHistory: true })
+const settings = ref({ retentionDays: '', saveHistory: true, maxPagesPerJob: '0', maxUploadMB: '0' })
 const showCleanupConfirm = ref(false)
 
 const savingUser = ref(false)
@@ -327,6 +335,10 @@ async function loadSettings() {
   const data = await resp.json()
   settings.value.retentionDays = String(data.retentionDays || 0)
   settings.value.saveHistory = data.saveHistory !== false
+  settings.value.maxPagesPerJob = String(data.maxPagesPerJob || 0)
+  // 后端以字节存储，前端 UI 用 MB 展示（1 MB = 1024*1024 B）。
+  const bytes = Number(data.maxUploadBytes || 0)
+  settings.value.maxUploadMB = String(bytes > 0 ? Math.round(bytes / (1024 * 1024)) : 0)
 }
 
 async function triggerCleanup() {
@@ -361,9 +373,13 @@ async function triggerCleanup() {
 async function saveSettings() {
   savingSettings.value = true
   try {
+    const maxPages = Math.max(0, parseInt(settings.value.maxPagesPerJob || '0', 10) || 0)
+    const maxMB = Math.max(0, parseInt(settings.value.maxUploadMB || '0', 10) || 0)
     const payload = {
       retentionDays: parseInt(settings.value.retentionDays || '0', 10),
-      saveHistory: settings.value.saveHistory
+      saveHistory: settings.value.saveHistory,
+      maxPagesPerJob: maxPages,
+      maxUploadBytes: maxMB * 1024 * 1024
     }
     const resp = await fetch('/api/admin/settings', {
       method: 'PUT',

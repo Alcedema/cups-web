@@ -44,8 +44,10 @@ type adminUserResponse struct {
 }
 
 type settingsPayload struct {
-	RetentionDays *int64 `json:"retentionDays"`
-	SaveHistory   *bool  `json:"saveHistory"`
+	RetentionDays  *int64 `json:"retentionDays"`
+	SaveHistory    *bool  `json:"saveHistory"`
+	MaxPagesPerJob *int64 `json:"maxPagesPerJob"`
+	MaxUploadBytes *int64 `json:"maxUploadBytes"`
 }
 
 func adminListUsersHandler(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +235,8 @@ func adminDeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var retention int64
 	var saveHistory int64
+	var maxPages int64
+	var maxBytes int64
 	err := appStore.WithTx(r.Context(), true, func(tx *sql.Tx) error {
 		val, err := store.GetSettingInt(r.Context(), tx, store.SettingRetentionDays, 0)
 		if err != nil {
@@ -244,6 +248,16 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		saveHistory = sh
+		mp, err := store.GetSettingInt(r.Context(), tx, store.SettingMaxPagesPerJob, 0)
+		if err != nil {
+			return err
+		}
+		maxPages = mp
+		mb, err := store.GetSettingInt(r.Context(), tx, store.SettingMaxUploadBytes, 0)
+		if err != nil {
+			return err
+		}
+		maxBytes = mb
 		return nil
 	})
 	if err != nil {
@@ -251,8 +265,10 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, map[string]interface{}{
-		"retentionDays": retention,
-		"saveHistory":   saveHistory != 0,
+		"retentionDays":  retention,
+		"saveHistory":    saveHistory != 0,
+		"maxPagesPerJob": maxPages,
+		"maxUploadBytes": maxBytes,
 	})
 }
 
@@ -277,6 +293,22 @@ func adminUpdateSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				v = 1
 			}
 			if err := store.SetSettingInt(r.Context(), tx, store.SettingSaveHistory, v); err != nil {
+				return err
+			}
+		}
+		if payload.MaxPagesPerJob != nil {
+			if *payload.MaxPagesPerJob < 0 {
+				return errors.New("invalid maxPagesPerJob")
+			}
+			if err := store.SetSettingInt(r.Context(), tx, store.SettingMaxPagesPerJob, *payload.MaxPagesPerJob); err != nil {
+				return err
+			}
+		}
+		if payload.MaxUploadBytes != nil {
+			if *payload.MaxUploadBytes < 0 {
+				return errors.New("invalid maxUploadBytes")
+			}
+			if err := store.SetSettingInt(r.Context(), tx, store.SettingMaxUploadBytes, *payload.MaxUploadBytes); err != nil {
 				return err
 			}
 		}
