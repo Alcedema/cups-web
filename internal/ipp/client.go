@@ -683,3 +683,244 @@ func listPrintersHTML(hostOnly string) ([]Printer, error) {
 
 	return printers, nil
 }
+
+// Job 描述 CUPS 上的一个打印任务的核心状态字段。字段命名与 IPP 属性一一对应,
+// 便于前端做筛选/取消操作时准确定位到远端队列里的具体任务(issue #60)。
+type Job struct {
+	// ID 是 CUPS 分配的 job-id(整数),取消操作必须用它作为 IPP 属性。
+	ID int `json:"id"`
+	// PrinterURI 是 IPP 上报的 job-printer-uri,前端取消时原样回传。
+	// 注意:CUPS 回给我们的是 ipp:// scheme + cupsd 自报的主机名,某些场景下
+	// 客户端拿到后连不上,所以我们再暴露一个 PrinterName + 由前端与 host 拼出
+	// 可用 URI 的能力。这里两条都留。
+	PrinterURI  string `json:"printerUri"`
+	PrinterName string `json:"printerName"`
+	// Name 是 job-name(通常就是文件名),用户识别用。
+	Name string `json:"name"`
+	// User 是 job-originating-user-name,便于用户认出"这是不是我发的任务"。
+	User string `json:"user"`
+	// State 是 CUPS 侧的原始状态整数(3=pending, 4=held, 5=processing,
+	// 6=stopped, 7=canceled, 8=aborted, 9=completed)。ListActiveJobs 只返
+	// which-jobs=not-completed,所以基本只会看到 3/4/5/6。
+	State int `json:"state"`
+	// StateText 已把 State 翻译为可读字串,前端直接展示。
+	StateText string `json:"stateText"`
+	// StateReasons 是 job-state-reasons,值形如 "job-printer-not-reachable"、
+	// "job-outgoing"、"processing-to-stop-point" 等,是排查"卡住"最关键的信号。
+	StateReasons []string `json:"stateReasons"`
+	// SizeKB 是 job-k-octets(KB),CUPS 报的是 KB 单位;缺失则为 0。
+	SizeKB int `json:"sizeKB"`
+	// TimeAtCreation 是 job 创建时 CUPS 内部计时(相对开机秒数,非绝对时间)。
+	// 前端主要用它做排序,不做绝对时间显示。
+	TimeAtCreation int `json:"timeAtCreation"`
+	// SheetsCompleted 是 job-media-sheets-completed,已经打完的纸张数。
+	// "任务卡在打印中"时用户很关心这个 —— 是完全没动还是只是最后一张卡纸。
+	SheetsCompleted int `json:"sheetsCompleted"`
+}
+
+// jobStateText 把 IPP job-state 整数翻成人可读文本。
+// RFC 8011 §5.3.7 定义了 3~9 这些值。
+func jobStateText(s int) string {
+	switch s {
+	case 3:
+		return "pending"
+	case 4:
+		return "held"
+	case 5:
+		return "processing"
+	case 6:
+		return "stopped"
+	case 7:
+		return "canceled"
+	case 8:
+		return "aborted"
+	case 9:
+		return "completed"
+	default:
+		return fmt.Sprintf("unknown(%d)", s)
+	}
+}
+
+// ListActiveJobs 查询 CUPS 上所有未完成的打印任务(issue #60)。
+//
+// 传统上 IPP Get-Jobs 是"某台打印机上的任务",但 CUPS 扩展允许把 printer-uri
+// 指向 ipp://host/(而不是具体队列),这样能一次拿到所有队列的任务列表 —— 对
+// "任务卡住"排查场景更省事(不用先枚举打印机)。搭配 which-jobs=not-completed
+// 只拿活动任务,my-jobs=false 拿所有用户的任务(默认只返回请求者自己的)。
+func ListActiveJobs(host string) ([]Job, error) {
+	hostOnly, err := cupsHostPort(host)
+	if err != nil {
+		return nil, err
+	}
+	reqURL := (&url.URL{Scheme: "http", Host: hostOnly, Path: "/"}).String()
+	if err := validatePrinterURI(reqURL); err != nil {
+		return nil, err
+	}
+	// IPP 侧的 printer-uri 需要 ipp:// scheme。
+	ippURI := httpToIppURI(reqURL)
+
+	req := goipp.NewRequest(goipp.DefaultVersion, goipp.OpGetJobs, 1)
+	req.Operation.Add(goipp.MakeAttribute("attributes-charset", goipp.TagCharset, goipp.String("utf-8")))
+	req.Operation.Add(goipp.MakeAttribute("attributes-natural-language", goipp.TagLanguage, goipp.String("en-US")))
+	req.Operation.Add(goipp.MakeAttribute("printer-uri", goipp.TagURI, goipp.String(ippURI)))
+	req.Operation.Add(goipp.MakeAttribute("which-jobs", goipp.TagKeyword, goipp.String("not-completed")))
+	req.Operation.Add(goipp.MakeAttribute("my-jobs", goipp.TagBoolean, goipp.Boolean(false)))
+	// 精确点名要用的属性,避免 CUPS 回一大堆无关字段。
+	var wanted goipp.Values
+	for _, name := range []string{
+		"job-id", "job-name", "job-state", "job-state-reasons",
+		"job-printer-uri", "job-originating-user-name",
+		"job-k-octets", "time-at-creation", "job-media-sheets-completed",
+	} {
+		wanted.Add(goipp.TagKeyword, goipp.String(name))
+	}
+	req.Operation.Add(goipp.Attribute{Name: "requested-attributes", Values: wanted})
+
+	payload, err := req.EncodeBytes()
+	if err != nil {
+		return nil, fmt.Errorf("encode ipp request: %w", err)
+	}
+	httpReq, err := http.NewRequest(http.MethodPost, reqURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create http request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", goipp.ContentType)
+	httpReq.Header.Set("Accept", goipp.ContentType)
+
+	resp, err := newSafeClient(dialTimeout).Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http post: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("http status: %s", resp.Status)
+	}
+
+	var rsp goipp.Message
+	if err := rsp.Decode(limitedBody(resp.Body)); err != nil {
+		return nil, fmt.Errorf("decode ipp response: %w", err)
+	}
+	if status := goipp.Status(rsp.Code); status != goipp.StatusOk {
+		return nil, fmt.Errorf("ipp error: %s", status.String())
+	}
+
+	// Get-Jobs 每个任务是一个 job-attributes group。跟 CUPS-Get-Printers 一样,
+	// 只看 rsp.Job 会漏 —— 必须遍历 rsp.Groups。
+	jobs := make([]Job, 0, len(rsp.Groups))
+	for _, grp := range rsp.Groups {
+		if grp.Tag != goipp.TagJobGroup {
+			continue
+		}
+		var j Job
+		for _, a := range grp.Attrs {
+			if len(a.Values) == 0 {
+				continue
+			}
+			switch a.Name {
+			case "job-id":
+				fmt.Sscanf(a.Values[0].V.String(), "%d", &j.ID)
+			case "job-name":
+				j.Name = a.Values[0].V.String()
+			case "job-originating-user-name":
+				j.User = a.Values[0].V.String()
+			case "job-state":
+				fmt.Sscanf(a.Values[0].V.String(), "%d", &j.State)
+			case "job-state-reasons":
+				for _, v := range a.Values {
+					s := v.V.String()
+					if s != "" && s != "none" {
+						j.StateReasons = append(j.StateReasons, s)
+					}
+				}
+			case "job-printer-uri":
+				j.PrinterURI = a.Values[0].V.String()
+				// 从 ipp://host/printers/NAME 里拆出 NAME,前端展示更友好。
+				if idx := strings.LastIndex(j.PrinterURI, "/"); idx > 0 && idx < len(j.PrinterURI)-1 {
+					j.PrinterName = j.PrinterURI[idx+1:]
+				}
+			case "job-k-octets":
+				fmt.Sscanf(a.Values[0].V.String(), "%d", &j.SizeKB)
+			case "time-at-creation":
+				fmt.Sscanf(a.Values[0].V.String(), "%d", &j.TimeAtCreation)
+			case "job-media-sheets-completed":
+				fmt.Sscanf(a.Values[0].V.String(), "%d", &j.SheetsCompleted)
+			}
+		}
+		if j.ID == 0 {
+			continue
+		}
+		j.StateText = jobStateText(j.State)
+		jobs = append(jobs, j)
+	}
+	log.Printf("[ipp] ListActiveJobs: %d job(s) from %s", len(jobs), hostOnly)
+	return jobs, nil
+}
+
+// CancelJob 通过 IPP Cancel-Job 取消 CUPS 上一个仍在活动状态的任务(issue #60)。
+//
+// jobURI 应当来自 ListActiveJobs 返回的 Job.PrinterURI —— 它是 job-printer-uri,
+// 值形如 ipp://host/printers/NAME。CUPS 允许拿"打印机的 printer-uri + job-id"
+// 组合定位任务,这是 RFC 8011 推荐的方式(另一种是 job-uri,但 CUPS 拼给我们
+// 的 hostname 在跨网络场景常常不好用)。
+//
+// username 建议传当前登录用户名,便于 CUPS 在开启 owner 校验时能通过 —— 默认
+// 策略允许 owner 取消自己发出的任务;若 CUPS 配置成 admin-only,普通用户会
+// 拿到 client-error-forbidden,交由上层把 IPP status 直接透传给前端。
+func CancelJob(printerURI string, jobID int, username string) error {
+	if jobID <= 0 {
+		return fmt.Errorf("invalid job id: %d", jobID)
+	}
+	if err := validatePrinterURI(printerURI); err != nil {
+		return err
+	}
+	// 请求发到 http:// URI(HTTP 传输层),但 printer-uri 属性用 ipp://。
+	httpTarget := printerURI
+	if strings.HasPrefix(httpTarget, "ipp://") {
+		httpTarget = "http://" + httpTarget[len("ipp://"):]
+	} else if strings.HasPrefix(httpTarget, "ipps://") {
+		httpTarget = "https://" + httpTarget[len("ipps://"):]
+	}
+	ippURI := httpToIppURI(httpTarget)
+
+	req := goipp.NewRequest(goipp.DefaultVersion, goipp.OpCancelJob, 1)
+	req.Operation.Add(goipp.MakeAttribute("attributes-charset", goipp.TagCharset, goipp.String("utf-8")))
+	req.Operation.Add(goipp.MakeAttribute("attributes-natural-language", goipp.TagLanguage, goipp.String("en-US")))
+	req.Operation.Add(goipp.MakeAttribute("printer-uri", goipp.TagURI, goipp.String(ippURI)))
+	req.Operation.Add(goipp.MakeAttribute("job-id", goipp.TagInteger, goipp.Integer(jobID)))
+	if username != "" {
+		req.Operation.Add(goipp.MakeAttribute("requesting-user-name", goipp.TagName, goipp.String(username)))
+	}
+
+	payload, err := req.EncodeBytes()
+	if err != nil {
+		return fmt.Errorf("encode ipp request: %w", err)
+	}
+	httpReq, err := http.NewRequest(http.MethodPost, httpTarget, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("create http request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", goipp.ContentType)
+	httpReq.Header.Set("Accept", goipp.ContentType)
+
+	resp, err := newSafeClient(dialTimeout).Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("http post: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("http status: %s", resp.Status)
+	}
+	var rsp goipp.Message
+	if err := rsp.Decode(limitedBody(resp.Body)); err != nil {
+		return fmt.Errorf("decode ipp response: %w", err)
+	}
+	status := goipp.Status(rsp.Code)
+	// CUPS 对已经不存在或已完成的任务会回 client-error-not-found / not-possible。
+	// 语义上"已经不在了"其实等价于取消成功,但为了让前端能提示"任务已消失/已完成",
+	// 这里如实透传 IPP status 字符串。
+	if status != goipp.StatusOk {
+		return fmt.Errorf("ipp error: %s", status.String())
+	}
+	log.Printf("[ipp] CancelJob: printer=%q job=%d user=%q ok", printerURI, jobID, username)
+	return nil
+}

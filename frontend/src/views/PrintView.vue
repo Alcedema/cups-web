@@ -18,7 +18,15 @@
           class="flex-1 min-w-0"
           @update:model-value="onPrinterSelect"
         />
-        <!-- 移动端：刷新按钮紧跟下拉（纯图标），桌面端隐藏 -->
+        <!-- 移动端：任务/刷新按钮紧跟下拉（纯图标），桌面端隐藏 -->
+        <UButton
+          variant="ghost"
+          size="xs"
+          icon="i-lucide-list-todo"
+          class="shrink-0 lg:hidden"
+          @click="openJobsModal"
+          title="CUPS 任务"
+        />
         <UButton
           variant="ghost"
           size="xs"
@@ -28,8 +36,14 @@
           :loading="refreshing"
         />
       </div>
-      <!-- 右：刷新按钮（桌面 col-span-3，靠右，与右栏对齐；移动端隐藏） -->
-      <div class="hidden lg:flex lg:col-span-3 items-center justify-end">
+      <!-- 右：任务列表 + 刷新按钮（桌面 col-span-3，靠右，与右栏对齐；移动端隐藏） -->
+      <div class="hidden lg:flex lg:col-span-3 items-center justify-end gap-2">
+        <UButton
+          variant="ghost"
+          size="xs"
+          icon="i-lucide-list-todo"
+          @click="openJobsModal"
+        >CUPS 任务</UButton>
         <UButton
           variant="ghost"
           size="xs"
@@ -244,6 +258,87 @@
         <PrinterStatus :printer-info="printerInfo" :printer-uri="printer" :loading="loadingPrinterInfo" :error="printerInfoError" @refresh="loadPrinterInfo" />
       </div>
     </div>
+
+    <!-- CUPS 任务列表弹窗（issue #60）：查看/取消 CUPS 未完成任务 -->
+    <UModal v-model:open="showJobsModal" :ui="{ content: 'max-w-3xl' }">
+      <template #content>
+        <div class="p-4 sm:p-6 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+              <UIcon name="i-lucide-list-todo" class="w-5 h-5 text-primary" />
+              CUPS 任务
+            </h3>
+            <div class="flex items-center gap-2">
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-lucide-refresh-cw"
+                :loading="loadingJobs"
+                @click="loadJobs(true)"
+              >刷新</UButton>
+              <UButton variant="ghost" size="xs" icon="i-lucide-x" @click="showJobsModal = false" />
+            </div>
+          </div>
+          <p class="text-xs text-muted">
+            列出 CUPS 队列中所有未完成的任务；每 5 秒自动刷新。可取消卡在 processing / stopped 的任务。
+          </p>
+
+          <div v-if="jobsError" class="text-sm text-error break-all">
+            {{ jobsError }}
+          </div>
+
+          <div v-if="loadingJobs && !cupsJobs.length" class="py-8 text-center text-sm text-muted">
+            加载中…
+          </div>
+          <div v-else-if="!cupsJobs.length" class="py-8 text-center text-sm text-muted">
+            当前没有未完成的任务。
+          </div>
+          <div v-else class="overflow-x-auto -mx-2 sm:mx-0">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-xs text-muted border-b border-muted">
+                  <th class="py-2 px-2">ID</th>
+                  <th class="py-2 px-2">打印机</th>
+                  <th class="py-2 px-2">文件</th>
+                  <th class="py-2 px-2">用户</th>
+                  <th class="py-2 px-2">状态</th>
+                  <th class="py-2 px-2 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="j in cupsJobs" :key="j.id" class="border-b border-muted/50">
+                  <td class="py-2 px-2 font-mono">{{ j.id }}</td>
+                  <td class="py-2 px-2 truncate max-w-[8rem]" :title="j.printerName">{{ j.printerName || '-' }}</td>
+                  <td class="py-2 px-2 truncate max-w-[10rem]" :title="j.name">{{ j.name || '-' }}</td>
+                  <td class="py-2 px-2 truncate max-w-[6rem]" :title="j.user">{{ j.user || '-' }}</td>
+                  <td class="py-2 px-2">
+                    <span
+                      class="inline-block px-1.5 py-0.5 rounded text-xs"
+                      :class="jobStateClass(j)"
+                    >{{ j.stateText }}</span>
+                    <div v-if="j.stateReasons?.length" class="text-[10px] text-muted mt-0.5 break-all">
+                      {{ j.stateReasons.join(', ') }}
+                    </div>
+                    <div v-if="j.sheetsCompleted > 0" class="text-[10px] text-muted mt-0.5">
+                      已打印 {{ j.sheetsCompleted }} 页
+                    </div>
+                  </td>
+                  <td class="py-2 px-2 text-right">
+                    <UButton
+                      size="xs"
+                      color="error"
+                      variant="soft"
+                      :loading="cancelingJobId === j.id"
+                      @click="cancelJob(j)"
+                    >取消</UButton>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -332,6 +427,77 @@ const composing = ref(false)
 // ─── 状态 ─────────────────────────────────────────────────
 const printing = ref(false)
 const refreshing = ref(false)
+
+// ─── CUPS 任务(issue #60) ────────────────────────────────
+// 打开一个 UModal 展示 CUPS 队列里所有未完成任务;每 5s 轮询一次(仅在 modal 开着时)。
+// 允许用户直接取消卡在 processing/stopped 的任务 —— 这是 #60 的核心诉求。
+const showJobsModal = ref(false)
+const cupsJobs = ref([])
+const loadingJobs = ref(false)
+const jobsError = ref('')
+const cancelingJobId = ref(0)
+let jobsTimer = null
+
+async function loadJobs(showLoading = false) {
+  if (showLoading) loadingJobs.value = true
+  jobsError.value = ''
+  try {
+    const resp = await apiFetch('/api/cups-jobs', {}, () => emit('logout'))
+    if (resp.ok) {
+      cupsJobs.value = await resp.json() || []
+    } else if (resp.status !== 401) {
+      jobsError.value = await readError(resp)
+    }
+  } catch (e) {
+    jobsError.value = e?.message || '加载失败'
+  } finally {
+    loadingJobs.value = false
+  }
+}
+
+function openJobsModal() {
+  showJobsModal.value = true
+  loadJobs(true)
+}
+
+// 打开/关闭 modal 时启停 5s 轮询;避免关闭后仍空转拉后端。
+watch(showJobsModal, (open) => {
+  if (jobsTimer) { clearInterval(jobsTimer); jobsTimer = null }
+  if (open) {
+    jobsTimer = setInterval(() => loadJobs(false), 5000)
+  }
+})
+
+async function cancelJob(job) {
+  if (!job?.id || cancelingJobId.value) return
+  cancelingJobId.value = job.id
+  try {
+    const resp = await apiFetch('/api/cups-jobs/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printerUri: job.printerUri, jobId: job.id }),
+    }, () => emit('logout'))
+    if (resp.ok) {
+      toast.add({ title: `已取消任务 #${job.id}`, color: 'success' })
+      await loadJobs(false)
+    } else if (resp.status !== 401) {
+      const msg = await readError(resp)
+      toast.add({ title: '取消失败', description: msg, color: 'error' })
+    }
+  } catch (e) {
+    toast.add({ title: '取消失败', description: e.message, color: 'error' })
+  } finally {
+    cancelingJobId.value = 0
+  }
+}
+
+function jobStateClass(j) {
+  // stopped / 带 reason 的通常是"卡住"的信号,用红/黄突出。
+  if (j.state === 6) return 'bg-error/10 text-error'
+  if (j.stateReasons?.length) return 'bg-warning/10 text-warning'
+  if (j.state === 5) return 'bg-primary/10 text-primary'
+  return 'bg-muted text-muted'
+}
 
 // ─── 打印记录 ─────────────────────────────────────────────
 const printRecords = ref([])
@@ -1203,6 +1369,7 @@ onMounted(async () => {
 onUnmounted(() => {
   clearInterval(recordsTimer)
   clearInterval(printerInfoTimer)
+  if (jobsTimer) clearInterval(jobsTimer)
   clearFile()
   clearModeState()
 })

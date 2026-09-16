@@ -108,6 +108,9 @@ func main() {
 	protected.HandleFunc("/print-records/{id:[0-9]+}/file", printRecordFileHandler).Methods("GET")
 	protected.HandleFunc("/print-records/{id:[0-9]+}/reprint", reprintHandler).Methods("POST")
 	protected.HandleFunc("/printer-info", printerInfoHandler).Methods("GET")
+	// CUPS 任务列表 / 取消:任何登录用户可用,权限由 CUPS 按 owner 校验(issue #60)。
+	protected.HandleFunc("/cups-jobs", cupsJobsHandler).Methods("GET")
+	protected.HandleFunc("/cups-jobs/cancel", cupsCancelJobHandler).Methods("POST")
 
 	admin := api.PathPrefix("/admin").Subrouter()
 	admin.Use(middleware.RequireSession)
