@@ -214,6 +214,21 @@
               <UButton variant="ghost" size="xs" color="error" icon="i-lucide-trash-2" @click="clearFile">清空全部</UButton>
             </div>
           </template>
+          <!-- 每页张数(issue #37):类 WinXP 打印图片向导,把多图排到同一页 -->
+          <div class="flex items-center gap-2 mb-2 text-sm">
+            <span class="text-muted shrink-0">每页张数</span>
+            <div class="flex rounded-lg border border-muted overflow-hidden">
+              <label
+                v-for="n in [1, 2, 4, 6, 9]"
+                :key="n"
+                class="px-3 py-1 cursor-pointer text-sm transition"
+                :class="imagesPerPage === n ? 'bg-primary text-white font-medium' : 'hover:bg-elevated'"
+              >
+                <input type="radio" :value="n" :checked="imagesPerPage === n" class="sr-only" @change="setImagesPerPage(n)" />
+                {{ n }}
+              </label>
+            </div>
+          </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div v-for="(img, idx) in selectedImages" :key="idx" class="relative group rounded-lg overflow-hidden border border-default">
               <img :src="imageThumbnails[idx]" class="w-full h-20 object-cover" :style="imageRotations[idx] ? `transform: rotate(${imageRotations[idx]}deg)` : ''" />
@@ -404,6 +419,9 @@ const converted = ref(false)
 const pdfBlob = ref(null)
 const downloadName = ref('')
 const selectedImages = ref([])
+// 多图每页张数(issue #37):1=每张一页(默认,历史行为);2/4/6/9=同一页网格排版。
+// 前端把这个值透给 /api/convert 的 per_page,后端 convertImagesMultiToPDF 会算网格。
+const imagesPerPage = ref(1)
 const imageThumbnails = ref([])
 const imageRotations = ref([])
 const fileDisplayName = ref('')
@@ -693,6 +711,7 @@ function clearFile() {
   selectedImages.value = []
   imageThumbnails.value = []
   imageRotations.value = []
+  imagesPerPage.value = 1
   fileDisplayName.value = ''
   gsApplying.value = false
   gsApplied.value = false
@@ -798,6 +817,13 @@ function rotateImage(idx, delta) {
   let next = (cur + delta) % 360
   if (next < 0) next += 360
   imageRotations.value[idx] = next
+  pdfBlob.value = null
+  converted.value = false
+}
+
+// 切换每页张数(issue #37):使上一次的 PDF 失效,让用户再点"合并"重新预览。
+function setImagesPerPage(n) {
+  imagesPerPage.value = n
   pdfBlob.value = null
   converted.value = false
 }
@@ -963,9 +989,9 @@ async function uploadAndPrintBatch() {
   batchProgress.value = { current: 0, total: 0 }
 }
 
-// 通过后端 /api/convert 将一或多张图片合成为单个 PDF。
+// 通过后端 /api/convert 将���或多张图片合成为单个 PDF。
 // - 单图时传 `file` 字段；多图时传多个 `files` 字段，由后端 convertImagesMultiToPDF 合并。
-// - HEIC 已由 processFile / processMultipleImages 提前转换为 JPEG，这里无需特殊处理。
+// - HEIC 已由 processFile / processMultipleImages 提前���换为 JPEG，这里无需特殊处理。
 // - 上传前用 downscaleImageIfNeeded 在浏览器端预压缩：长边 >3000px 的大图缩成 JPEG，
 //   避免多张原图合并时撞到反向代理的 client_max_body_size 触发 413（Issue #42）。
 //   阈值与后端 imageDownscaleMaxEdge 对齐，服务端拿到时已是合理尺寸，无需再 downscale。
@@ -986,7 +1012,12 @@ async function convertImagesToPdfViaServer(files, orient, pSize, name, rotations
     if (rotations && rotations.length) {
       fd.append('rotations', rotations.map(r => r || 0).join(','))
     }
+    // 每页张数(issue #37):>1 时后端按网格排版到同一页。
+    if (imagesPerPage.value && imagesPerPage.value > 1) {
+      fd.append('per_page', String(imagesPerPage.value))
+    }
   }
+
   if (orient) fd.append('orientation', orient)
   if (pSize) fd.append('paper_size', pSize)
   if (invert) fd.append('invert', 'true')

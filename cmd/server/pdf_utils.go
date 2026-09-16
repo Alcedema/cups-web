@@ -416,9 +416,13 @@ func convertTextToPDF(inputPath string, orientation string, paperSize string) (s
 }
 
 // convertImagesMultiToPDF 将多张图片合并为单个 PDF。
-// 每张图片占据一页，按等比例缩放居中绘制，页面大小与方向由 orientation / paperSize 决定。
+// 每张图片占据一页,按等比例缩放居中绘制,页面大小与方向由 orientation / paperSize 决定。
+// perPage 支持把多张图片排到同一页(issue #37,类 WinXP 打印图片向导):
+//   1(默认) → 每张一页
+//   2/4/6/9 → 每页对应张数,按行优先的等分网格居中
+// 非法或 <=1 的 perPage 一律按 1 处理。
 // 调用方负责在使用完输出 PDF 后调用返回的 cleanup 清理临时目录。
-func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation string, paperSize string, rotations []int, invert bool) (string, func(), error) {
+func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation string, paperSize string, rotations []int, invert bool, perPage int) (string, func(), error) {
 	if len(fileHeaders) == 0 {
 		return "", nil, errors.New("no image files provided")
 	}
@@ -497,22 +501,49 @@ func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation st
 	pdf.SetMargins(pdfPageMarginMM, pdfPageMarginMM, pdfPageMarginMM)
 	pdf.SetAutoPageBreak(false, pdfPageMarginMM)
 
-	for _, img := range saved {
-		pdf.AddPage()
-		pageW, pageH := pdf.GetPageSize()
-		maxW := pageW - 2*pdfPageMarginMM
-		maxH := pageH - 2*pdfPageMarginMM
-		scale := math.Min(maxW/float64(img.cfg.Width), maxH/float64(img.cfg.Height))
+	cols, rows := gridDimsForPerPage(perPage)
+	slotsPerPage := cols * rows
+
+	// 网格间距:格子之间留 4mm 视觉分隔,过大会把每张图挤得太小,过小又贴在一起。
+	const gapMM = 4.0
+
+	drawImage := func(img savedImage, slotX, slotY, slotW, slotH float64) {
+		if slotW <= 0 || slotH <= 0 {
+			return
+		}
+		scale := math.Min(slotW/float64(img.cfg.Width), slotH/float64(img.cfg.Height))
 		if scale <= 0 {
 			scale = 1
 		}
 		w := float64(img.cfg.Width) * scale
 		h := float64(img.cfg.Height) * scale
-		x := (pageW - w) / 2
-		y := (pageH - h) / 2
-
+		x := slotX + (slotW-w)/2
+		y := slotY + (slotH-h)/2
 		opts := gofpdf.ImageOptions{ImageType: "", ReadDpi: true}
 		pdf.ImageOptions(img.path, x, y, w, h, false, opts, 0, "")
+	}
+
+	for i, img := range saved {
+		slot := i % slotsPerPage
+		if slot == 0 {
+			pdf.AddPage()
+		}
+		pageW, pageH := pdf.GetPageSize()
+		maxW := pageW - 2*pdfPageMarginMM
+		maxH := pageH - 2*pdfPageMarginMM
+
+		if slotsPerPage == 1 {
+			drawImage(img, pdfPageMarginMM, pdfPageMarginMM, maxW, maxH)
+			continue
+		}
+		// 按行优先(row-major)分配:slot=0 在左上,横向填满一行再换行。
+		col := slot % cols
+		row := slot / cols
+		slotW := (maxW - float64(cols-1)*gapMM) / float64(cols)
+		slotH := (maxH - float64(rows-1)*gapMM) / float64(rows)
+		slotX := pdfPageMarginMM + float64(col)*(slotW+gapMM)
+		slotY := pdfPageMarginMM + float64(row)*(slotH+gapMM)
+		drawImage(img, slotX, slotY, slotW, slotH)
 	}
 
 	outPath := filepath.Join(tmpDir, "images.pdf")
@@ -521,6 +552,23 @@ func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation st
 		return "", nil, err
 	}
 	return outPath, cleanup, nil
+}
+
+// gridDimsForPerPage 把 perPage 映射成 cols × rows 布局(row-major)。
+// 只支持 issue #37 覆盖的常用张数;其他值一律回退到 1×1(每张一页)。
+func gridDimsForPerPage(perPage int) (cols, rows int) {
+	switch perPage {
+	case 2:
+		return 1, 2
+	case 4:
+		return 2, 2
+	case 6:
+		return 2, 3
+	case 9:
+		return 3, 3
+	default:
+		return 1, 1
+	}
 }
 
 // itoa 是一个小助手，避免再引入 strconv 仅为了格式化索引

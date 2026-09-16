@@ -33,7 +33,15 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 	if r.MultipartForm != nil {
 		if headers, ok := r.MultipartForm.File["files"]; ok && len(headers) > 0 {
 			rotations := parseRotations(r.FormValue("rotations"))
-			outPath, outCleanup, err = convertImagesMultiToPDF(headers, orientation, paperSize, rotations, invert)
+			// per_page(issue #37):把多张图片排到同一页的网格布局。默认 1(每张一页)。
+			perPage := 1
+			if n, e := strconv.Atoi(r.FormValue("per_page")); e == nil {
+				switch n {
+				case 1, 2, 4, 6, 9:
+					perPage = n
+				}
+			}
+			outPath, outCleanup, err = convertImagesMultiToPDF(headers, orientation, paperSize, rotations, invert, perPage)
 			if err != nil {
 				writeJSONError(w, http.StatusInternalServerError, "文件转换失败："+err.Error())
 				return
