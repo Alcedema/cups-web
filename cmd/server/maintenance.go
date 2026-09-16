@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"cups-web/internal/store"
@@ -49,6 +50,10 @@ func cleanupAllPrints(ctx context.Context, s *store.Store, uploads string) (int,
 	}
 
 	for _, rel := range paths {
+		if isScheduledRel(rel) {
+			// 保护定时任务源文件；对应"清空全部打印历史"仅清 print_jobs 表和普通上传。
+			continue
+		}
 		abs := filepath.Join(uploads, filepath.FromSlash(rel))
 		_ = os.Remove(abs)
 		cRel := convertedRelPath(rel)
@@ -112,6 +117,12 @@ func cleanupOldPrints(ctx context.Context, s *store.Store, uploads string, now t
 	}
 
 	for _, rel := range paths {
+		// scheduled/ 前缀的文件属于定时任务源文件（issue #28），是共享资源：
+		// print_jobs 里可能有很多条历史指向同一份源文件，删掉会打断后续触发。
+		// 这里跳过；定时任务的清理由 DeleteScheduledPrint 负责。
+		if isScheduledRel(rel) {
+			continue
+		}
 		abs := filepath.Join(uploads, filepath.FromSlash(rel))
 		_ = os.Remove(abs)
 		convertedRel := convertedRelPath(rel)
@@ -130,4 +141,15 @@ func cleanupOldPrints(ctx context.Context, s *store.Store, uploads string, now t
 		}
 	}
 	return nil
+}
+
+// isScheduledRel 判断一个 stored_path 是否指向定时任务的源文件。
+// 前缀与 scheduledSubDir 保持一致，全路径归一化为斜杠再判断，避免跨平台差异。
+func isScheduledRel(rel string) bool {
+	if rel == "" {
+		return false
+	}
+	rel = filepath.ToSlash(rel)
+	return rel == scheduledSubDir ||
+		strings.HasPrefix(rel, scheduledSubDir+"/")
 }

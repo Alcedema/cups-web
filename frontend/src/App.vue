@@ -12,9 +12,10 @@
         <div class="flex items-center gap-2">
           <!-- 桌面端（sm+）：分段按钮 + 文字，一目了然 -->
           <div class="hidden sm:flex items-center gap-2">
-            <!-- 导航分段容器：与主 CTA 视觉区分 -->
+            <!-- 导航分段容器：与主 CTA 视觉区分。
+                 「打印 / 定时」对所有登录用户开放；「管理 / 驱动」仅管理员可见。 -->
             <div
-              v-if="isAdmin"
+              v-if="session"
               class="flex items-center gap-0.5 p-0.5 rounded-lg bg-elevated/60 border border-default"
             >
               <UButton
@@ -27,6 +28,16 @@
                 打印
               </UButton>
               <UButton
+                :variant="route.path === '/scheduled' ? 'soft' : 'ghost'"
+                :color="route.path === '/scheduled' ? 'primary' : 'neutral'"
+                size="xs"
+                icon="i-lucide-calendar-clock"
+                @click="router.push('/scheduled')"
+              >
+                定时
+              </UButton>
+              <UButton
+                v-if="isAdmin"
                 :variant="route.path === '/admin' ? 'soft' : 'ghost'"
                 :color="route.path === '/admin' ? 'primary' : 'neutral'"
                 size="xs"
@@ -36,6 +47,7 @@
                 管理
               </UButton>
               <UButton
+                v-if="isAdmin"
                 :variant="route.path === '/drivers' ? 'soft' : 'ghost'"
                 :color="route.path === '/drivers' ? 'primary' : 'neutral'"
                 size="xs"
@@ -150,8 +162,11 @@ const isAdmin = computed(() => session.value?.role === 'admin')
 // 移动端汉堡菜单项：导航项（仅 admin）与登出分成两组，组间自动加分隔线
 const menuItems = computed(() => {
   const nav = []
-  if (isAdmin.value) {
+  if (session.value) {
     nav.push({ label: '打印', icon: 'i-lucide-file-text', onSelect: () => router.push('/print') })
+    nav.push({ label: '定时', icon: 'i-lucide-calendar-clock', onSelect: () => router.push('/scheduled') })
+  }
+  if (isAdmin.value) {
     nav.push({ label: '管理', icon: 'i-lucide-settings', onSelect: () => router.push('/admin') })
     nav.push({ label: '驱动', icon: 'i-lucide-puzzle', onSelect: () => router.push('/drivers') })
   }

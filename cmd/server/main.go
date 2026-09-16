@@ -110,6 +110,12 @@ func main() {
 	protected.HandleFunc("/print-records/{id:[0-9]+}/file", printRecordFileHandler).Methods("GET")
 	protected.HandleFunc("/print-records/{id:[0-9]+}/reprint", reprintHandler).Methods("POST")
 	protected.HandleFunc("/printer-info", printerInfoHandler).Methods("GET")
+	// 定时打印（issue #28）：用户上传文件 + 打印参数 + 触发策略，由后台调度器到点触发。
+	protected.HandleFunc("/scheduled-prints", scheduledListHandler).Methods("GET")
+	protected.HandleFunc("/scheduled-prints", scheduledCreateHandler).Methods("POST")
+	protected.HandleFunc("/scheduled-prints/{id:[0-9]+}", scheduledUpdateHandler).Methods("PUT")
+	protected.HandleFunc("/scheduled-prints/{id:[0-9]+}", scheduledDeleteHandler).Methods("DELETE")
+	protected.HandleFunc("/scheduled-prints/{id:[0-9]+}/run", scheduledRunNowHandler).Methods("POST")
 	// CUPS 任务列表 / 取消:任何登录用户可用,权限由 CUPS 按 owner 校验(issue #60)。
 	protected.HandleFunc("/cups-jobs", cupsJobsHandler).Methods("GET")
 	protected.HandleFunc("/cups-jobs/cancel", cupsCancelJobHandler).Methods("POST")
@@ -154,6 +160,7 @@ func main() {
 	}
 
 	startMaintenance(appStore, uploadDir)
+	startScheduler(appStore, uploadDir)
 
 	fmt.Println("listening on", addr)
 	log.Fatal(srv.ListenAndServe())
