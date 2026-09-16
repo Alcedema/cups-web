@@ -122,6 +122,112 @@ func downscaleImageIfNeeded(inputPath string, tmpDir string) (string, image.Conf
 	return outPath, newCfg, nil
 }
 
+// applyImageTransforms 对图片做正交旋转(quarters 个 90°，1=顺时针 90°)与反色(invert)。
+// 仅当需要旋转或反色时才解码并重新编码为 JPEG(有损)；无需变换时原样返回原路径，只读尺寸。
+// 返回变换后的路径与最终尺寸（90°/270° 旋转后宽高互换）。
+// 与 downscaleImageIfNeeded 串联：先下采样，再变换，保证大图也不会把原图整张塞进 PDF。
+// 旋转用正交像素搬移（无插值、无损），反色直接对 RGBA 通道做 255-c（alpha 不变）。
+func applyImageTransforms(inputPath string, tmpDir string, quarters int, invert bool) (string, image.Config, error) {
+	quarters = ((quarters % 4) + 4) % 4
+	if quarters == 0 && !invert {
+		f, err := os.Open(inputPath)
+		if err != nil {
+			return "", image.Config{}, err
+		}
+		cfg, _, err := image.DecodeConfig(f)
+		_ = f.Close()
+		return inputPath, cfg, err
+	}
+
+	srcFile, err := os.Open(inputPath)
+	if err != nil {
+		return "", image.Config{}, err
+	}
+	src, _, err := image.Decode(srcFile)
+	_ = srcFile.Close()
+	if err != nil {
+		return "", image.Config{}, err
+	}
+	sb := src.Bounds()
+	rgba := image.NewRGBA(image.Rect(0, 0, sb.Dx(), sb.Dy()))
+	draw.Draw(rgba, rgba.Bounds(), src, sb.Min, draw.Src)
+
+	if invert {
+		invertRGBA(rgba)
+	}
+	out := rgba
+	if quarters != 0 {
+		out = rotateRGBA(rgba, quarters)
+	}
+
+	ob := out.Bounds()
+	seq := atomic.AddUint64(&downscaleSeq, 1)
+	outPath := filepath.Join(tmpDir, "xform_"+itoa(int(seq))+".jpg")
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		return "", image.Config{}, err
+	}
+	if err := jpeg.Encode(outFile, out, &jpeg.Options{Quality: imageDownscaleJPEGQ}); err != nil {
+		_ = outFile.Close()
+		_ = os.Remove(outPath)
+		return "", image.Config{}, err
+	}
+	if err := outFile.Close(); err != nil {
+		_ = os.Remove(outPath)
+		return "", image.Config{}, err
+	}
+	return outPath, image.Config{Width: ob.Dx(), Height: ob.Dy()}, nil
+}
+
+// invertRGBA 原地对 RGBA 图像做反色（负片）：RGB 三通道 255-c，alpha 通道不变。
+func invertRGBA(img *image.RGBA) {
+	pix := img.Pix
+	for i := 0; i < len(pix); i += 4 {
+		pix[i] = 255 - pix[i]
+		pix[i+1] = 255 - pix[i+1]
+		pix[i+2] = 255 - pix[i+2]
+	}
+}
+
+// rotateRGBA 对 RGBA 图像做正交旋转（quarters 个 90°顺时针）。
+// quarters: 1=90°CW, 2=180°, 3=270°CW(=90°CCW)。
+// 用像素字节搬移实现，无插值、无损；90°/270° 时输出宽高互换。
+func rotateRGBA(src *image.RGBA, quarters int) *image.RGBA {
+	sb := src.Bounds()
+	w, h := sb.Dx(), sb.Dy()
+	var dst *image.RGBA
+	if quarters == 1 || quarters == 3 {
+		dst = image.NewRGBA(image.Rect(0, 0, h, w))
+	} else {
+		dst = image.NewRGBA(image.Rect(0, 0, w, h))
+	}
+	sstride := src.Stride
+	dstride := dst.Stride
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			var dx, dy int
+			switch quarters {
+			case 1: // 90° CW
+				dx = h - 1 - y
+				dy = x
+			case 2: // 180°
+				dx = w - 1 - x
+				dy = h - 1 - y
+			case 3: // 270° CW
+				dx = y
+				dy = w - 1 - x
+			}
+			si := y*sstride + x*4
+			di := dy*dstride + dx*4
+			dst.Pix[di] = src.Pix[si]
+			dst.Pix[di+1] = src.Pix[si+1]
+			dst.Pix[di+2] = src.Pix[si+2]
+			dst.Pix[di+3] = src.Pix[si+3]
+		}
+	}
+	return dst
+}
+
 // paperSizeToGofpdf 将纸张大小名称映射到 gofpdf 参数
 // 返回：gofpdf 认识的标准名称（或空字符串表示自定义）、自定义尺寸（如果是自定义纸张）
 func paperSizeToGofpdf(size string) (string, gofpdf.SizeType) {
@@ -170,7 +276,7 @@ func getOrientationCode(orientation string) string {
 	return "P"
 }
 
-func convertImageToPDF(inputPath string, orientation string, paperSize string) (string, func(), error) {
+func convertImageToPDF(inputPath string, orientation string, paperSize string, invert bool) (string, func(), error) {
 	tmpDir, err := os.MkdirTemp("", "convert-img-")
 	if err != nil {
 		return "", nil, err
@@ -179,6 +285,13 @@ func convertImageToPDF(inputPath string, orientation string, paperSize string) (
 
 	// 大图先下采样再嵌入，避免 PDF 体积过大导致移动端预览/下载失败（Issue #22）。
 	imgPath, cfg, err := downscaleImageIfNeeded(inputPath, tmpDir)
+	if err != nil {
+		cleanup()
+		return "", nil, err
+	}
+
+	// 黑白反转（issue #87）：对图片做反色后嵌入。无需变换时原样返回，不产生二次编码。
+	imgPath, cfg, err = applyImageTransforms(imgPath, tmpDir, 0, invert)
 	if err != nil {
 		cleanup()
 		return "", nil, err
@@ -305,7 +418,7 @@ func convertTextToPDF(inputPath string, orientation string, paperSize string) (s
 // convertImagesMultiToPDF 将多张图片合并为单个 PDF。
 // 每张图片占据一页，按等比例缩放居中绘制，页面大小与方向由 orientation / paperSize 决定。
 // 调用方负责在使用完输出 PDF 后调用返回的 cleanup 清理临时目录。
-func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation string, paperSize string) (string, func(), error) {
+func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation string, paperSize string, rotations []int, invert bool) (string, func(), error) {
 	if len(fileHeaders) == 0 {
 		return "", nil, errors.New("no image files provided")
 	}
@@ -350,6 +463,16 @@ func convertImagesMultiToPDF(fileHeaders []*multipart.FileHeader, orientation st
 
 		// 大图下采样：移动端合并若干张 10M+ 原图时最容易卡在这一步
 		finalPath, cfg, err := downscaleImageIfNeeded(imgPath, tmpDir)
+		if err != nil {
+			cleanup()
+			return "", nil, err
+		}
+		// 逐图旋转 + 黑白反转（issue #87）：rotations[idx] 为度数（0/90/180/270），转 quarters 传入。
+		rot := 0
+		if idx < len(rotations) {
+			rot = rotations[idx]
+		}
+		finalPath, cfg, err = applyImageTransforms(finalPath, tmpDir, rot/90, invert)
 		if err != nil {
 			cleanup()
 			return "", nil, err

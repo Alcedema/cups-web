@@ -47,6 +47,8 @@ func printHandler(w http.ResponseWriter, r *http.Request) {
 
 	isDuplex := r.FormValue("duplex") == "true"
 	isColor := r.FormValue("color") == "true"
+	// 黑白反转（issue #87）：仅图片转 PDF 生效，不落库（reprint 不保留）
+	invert := r.FormValue("invert") == "true"
 
 	// Extended print options
 	copiesStr := r.FormValue("copies")
@@ -172,7 +174,7 @@ func printHandler(w http.ResponseWriter, r *http.Request) {
 		printCleanup = cleanup
 		printMime = "application/pdf"
 	case fileKindImage:
-		outPath, cleanup, err := convertImageToPDF(storedAbs, orientation, paperSize)
+		outPath, cleanup, err := convertImageToPDF(storedAbs, orientation, paperSize, invert)
 		if err != nil {
 			_ = os.Remove(storedAbs)
 			writeJSONError(w, http.StatusBadRequest, "conversion failed")

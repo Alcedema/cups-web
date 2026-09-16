@@ -170,11 +170,15 @@
           </template>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div v-for="(img, idx) in selectedImages" :key="idx" class="relative group rounded-lg overflow-hidden border border-default">
-              <img :src="imageThumbnails[idx]" class="w-full h-20 object-cover" />
+              <img :src="imageThumbnails[idx]" class="w-full h-20 object-cover" :style="imageRotations[idx] ? `transform: rotate(${imageRotations[idx]}deg)` : ''" />
+              <div class="absolute top-1 right-1 flex gap-1">
+                <UButton variant="solid" size="xs" color="primary" icon="i-lucide-rotate-ccw" title="左旋90°" @click="rotateImage(idx, -90)" />
+                <UButton variant="solid" size="xs" color="primary" icon="i-lucide-rotate-cw" title="右旋90°" @click="rotateImage(idx, 90)" />
+              </div>
               <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <UButton variant="solid" size="xs" color="error" icon="i-lucide-x" @click="removeImage(idx)" />
               </div>
-              <p class="text-xs truncate px-1 py-0.5">{{ img.name }}</p>
+              <p class="text-xs truncate px-1 py-0.5">{{ img.name }}<span v-if="imageRotations[idx]" class="text-muted"> · {{ imageRotations[idx] }}°</span></p>
             </div>
           </div>
         </UCard>
@@ -182,6 +186,8 @@
         <!-- 打印参数 -->
         <PrintOptions
           v-model:isColor="isColor"
+          v-model:invert="invert"
+          :invert-visible="isInvertible"
           v-model:duplex="duplex"
           v-model:copies="copies"
           v-model:paperSize="paperSize"
@@ -242,7 +248,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { apiFetch, readError } from '../utils/api'
 import { isOfficeFile, isOFDFile } from '../utils/file'
 import { downscaleImageIfNeeded } from '../utils/image'
@@ -272,6 +278,7 @@ const pdfBlob = ref(null)
 const downloadName = ref('')
 const selectedImages = ref([])
 const imageThumbnails = ref([])
+const imageRotations = ref([])
 const fileDisplayName = ref('')
 // 是否对当前 PDF 应用了后端 gs 规范化（仅 PDF 上传后通过 UI 按钮显式触发）
 const gsApplying = ref(false)
@@ -284,6 +291,8 @@ const batchProgress = ref({ current: 0, total: 0 })
 
 // ─── 打印参数 ─────────────────────────────────────────────
 const isColor = ref(true)
+// 黑白反转（issue #87）：仅图片转 PDF、黑白模式下生效
+const invert = ref(false)
 const duplex = ref('one-sided')
 const orientation = ref('portrait')
 const copies = ref(1)
@@ -373,6 +382,15 @@ const paperSizeItems = [
 // ─── 计算属性 ─────────────────────────────────────────────
 const isMultiImage = computed(() => selectedImages.value.length > 1)
 const multiImageTotalSize = computed(() => selectedImages.value.reduce((sum, f) => sum + f.size, 0))
+// 当前是否为图片场景（单图图片或多图合一），决定「黑白反转」是否可用
+const isImageKind = computed(() =>
+  isMultiImage.value ||
+  (selectedFile.value && selectedFile.value.type && selectedFile.value.type.startsWith('image/'))
+)
+// 黑白反转仅对图片转 PDF 且黑白模式有效
+const isInvertible = computed(() => isImageKind.value && !isColor.value)
+// 切换到非「图片+黑白」场景时重置反转，避免彩色时残留反色
+watch(isInvertible, (v) => { if (!v) invert.value = false })
 const canPrint = computed(() => {
   if (!printer.value) return false
   if (printMode.value === 'standard') {
@@ -472,6 +490,7 @@ function clearFile() {
   imageThumbnails.value.forEach(url => { try { URL.revokeObjectURL(url) } catch (_) {} })
   selectedImages.value = []
   imageThumbnails.value = []
+  imageRotations.value = []
   fileDisplayName.value = ''
   gsApplying.value = false
   gsApplied.value = false
@@ -570,10 +589,22 @@ async function heicBlobToJpegBlob(file) {
   }
 }
 
+// 多图合一逐图旋转（issue #87）：左旋/右旋 90°，归一化到 0/90/180/270。
+// 旋转后旧的合并 PDF 失效，清掉 pdfBlob 强制重新转换，避免打印到未旋转的旧 PDF。
+function rotateImage(idx, delta) {
+  const cur = imageRotations.value[idx] || 0
+  let next = (cur + delta) % 360
+  if (next < 0) next += 360
+  imageRotations.value[idx] = next
+  pdfBlob.value = null
+  converted.value = false
+}
+
 function processMultipleImages(files) {
   clearFile()
   const arr = Array.from(files)
   selectedImages.value = arr
+  imageRotations.value = arr.map(() => 0)
   fileDisplayName.value = `${arr.length}张图片`
   downloadName.value = '合并图片.pdf'
   converted.value = false
@@ -628,6 +659,7 @@ function removeImage(idx) {
   URL.revokeObjectURL(imageThumbnails.value[idx])
   selectedImages.value.splice(idx, 1)
   imageThumbnails.value.splice(idx, 1)
+  imageRotations.value.splice(idx, 1)
   if (selectedImages.value.length === 1) {
     // 切换为单图片模式
     const f = selectedImages.value[0]
@@ -676,6 +708,7 @@ async function uploadAndPrintBatch() {
         fd.append('file', file, file.name)
         fd.append('orientation', orientation.value)
         fd.append('paper_size', paperSize.value)
+        if (invert.value) fd.append('invert', 'true')
         const convertResp = await apiFetch('/api/convert', { method: 'POST', body: fd }, () => emit('logout'))
         if (!convertResp.ok) {
           throw new Error(await readError(convertResp))
@@ -735,7 +768,7 @@ async function uploadAndPrintBatch() {
 //   避免多张原图合并时撞到反向代理的 client_max_body_size 触发 413（Issue #42）。
 //   阈值与后端 imageDownscaleMaxEdge 对齐，服务端拿到时已是合理尺寸，无需再 downscale。
 //   sequential 而非 Promise.all 是为了避免移动端同时持有多张大 canvas 导致 OOM。
-async function convertImagesToPdfViaServer(files, orient, pSize, name) {
+async function convertImagesToPdfViaServer(files, orient, pSize, name, rotations, invert) {
   const list = Array.isArray(files) ? files : [files]
   const downscaled = []
   for (const f of list) {
@@ -747,9 +780,14 @@ async function convertImagesToPdfViaServer(files, orient, pSize, name) {
   } else {
     for (const f of downscaled) fd.append('files', f, f.name)
     if (name) fd.append('name', name)
+    // 多图合一逐图旋转（issue #87）：按顺序对应每个 files 字段
+    if (rotations && rotations.length) {
+      fd.append('rotations', rotations.map(r => r || 0).join(','))
+    }
   }
   if (orient) fd.append('orientation', orient)
   if (pSize) fd.append('paper_size', pSize)
+  if (invert) fd.append('invert', 'true')
   const resp = await apiFetch('/api/convert', { method: 'POST', body: fd }, () => emit('logout'))
   if (!resp.ok) throw new Error(await readError(resp))
   return resp.blob()
@@ -783,12 +821,13 @@ async function convertToPdf() {
     let blob
     if (isMultiImage.value) {
       blob = await convertImagesToPdfViaServer(
-        selectedImages.value, orientation.value, paperSize.value, downloadName.value || '合并图片.pdf'
+        selectedImages.value, orientation.value, paperSize.value, downloadName.value || '合并图片.pdf',
+        imageRotations.value, invert.value
       )
     } else if (isOfficeFile(f) || isOFDFile(f)) {
       blob = await convertOfficeToPdf(f)
     } else if (f.type.startsWith('image/')) {
-      blob = await convertImagesToPdfViaServer([f], orientation.value, paperSize.value)
+      blob = await convertImagesToPdfViaServer([f], orientation.value, paperSize.value, null, null, invert.value)
     } else {
       blob = await convertTextViaServer(f, orientation.value, paperSize.value)
     }
@@ -873,6 +912,8 @@ async function uploadAndPrint() {
   if (pageRange.value.trim()) form.append('page_range', pageRange.value.trim())
   if (pageSet.value && pageSet.value !== 'all') form.append('page_set', pageSet.value)
   if (mirror.value) form.append('mirror', 'true')
+  // 单图图片直接打印（未先转 PDF）时把黑白反转带给后端；已转成 PDF 的不传（反色已并入）
+  if (invert.value && !pdfBlob.value && isImageKind.value) form.append('invert', 'true')
   if (watermarkText.value.trim()) form.append('watermark_text', watermarkText.value.trim())
   if (numberUp.value > 1) {
     form.append('number_up', String(numberUp.value))

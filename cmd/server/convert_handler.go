@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 func convertHandler(w http.ResponseWriter, r *http.Request) {
@@ -19,6 +21,8 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 	// 读取方向和纸张大小参数
 	orientation := r.FormValue("orientation")
 	paperSize := r.FormValue("paper_size")
+	// 黑白反转（issue #87）：仅对图片转 PDF 生效
+	invert := r.FormValue("invert") == "true"
 
 	var outPath string
 	var outCleanup func()
@@ -28,7 +32,8 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 	// 优先处理多文件字段（图片合并场景）
 	if r.MultipartForm != nil {
 		if headers, ok := r.MultipartForm.File["files"]; ok && len(headers) > 0 {
-			outPath, outCleanup, err = convertImagesMultiToPDF(headers, orientation, paperSize)
+			rotations := parseRotations(r.FormValue("rotations"))
+			outPath, outCleanup, err = convertImagesMultiToPDF(headers, orientation, paperSize, rotations, invert)
 			if err != nil {
 				writeJSONError(w, http.StatusInternalServerError, "文件转换失败："+err.Error())
 				return
@@ -67,7 +72,7 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 	kind := detectFileKind(inPath, fh.Filename)
 	switch kind {
 	case fileKindImage:
-		outPath, outCleanup, err = convertImageToPDF(inPath, orientation, paperSize)
+		outPath, outCleanup, err = convertImageToPDF(inPath, orientation, paperSize, invert)
 	case fileKindText:
 		outPath, outCleanup, err = convertTextToPDF(inPath, orientation, paperSize)
 	case fileKindOFD:
@@ -118,6 +123,36 @@ func convertErrMsg(err error) string {
 		return "服务器缺少文件转换所需的工具，请联系管理员安装相关依赖。"
 	}
 	return "文件转换失败：" + err.Error()
+}
+
+// parseRotations 解析多图合一的逐图旋转参数（issue #87）。
+// 输入形如 "90,0,270"，按顺序对应每个 files 字段；缺项或非法按 0（不旋转）。
+func parseRotations(s string) []int {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]int, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			out = append(out, 0)
+			continue
+		}
+		n, err := strconv.Atoi(p)
+		if err != nil {
+			out = append(out, 0)
+			continue
+		}
+		// 归一化到 0/90/180/270
+		switch ((n % 360) + 360) % 360 {
+		case 90, 180, 270:
+			out = append(out, n)
+		default:
+			out = append(out, 0)
+		}
+	}
+	return out
 }
 
 // streamPDF 以 application/pdf 的 Content-Type 把 PDF 文件流式写回响应

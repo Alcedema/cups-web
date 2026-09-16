@@ -21,6 +21,16 @@
         </div>
       </UFormField>
 
+      <!-- 黑白反转（仅图片 + 黑白模式时显示，issue #87） -->
+      <UFormField v-if="invertVisible" label="黑白反转" hint="把黑底白字反成正常；正常图片会变负片">
+        <label class="flex items-center gap-2 p-2 border rounded-lg cursor-pointer transition hover:bg-elevated w-fit"
+          :class="invert ? 'border-primary bg-primary/5' : 'border-muted'">
+          <UCheckbox :model-value="invert" @update:model-value="$emit('update:invert', $event)" />
+          <UIcon name="i-lucide-contrast" class="w-4 h-4" />
+          <span class="text-sm">反色（负片）</span>
+        </label>
+      </UFormField>
+
       <!-- 双面 + 份数 -->
       <div class="grid grid-cols-2 gap-3">
         <UFormField label="双面打印">
@@ -172,6 +182,8 @@ import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   isColor: { type: Boolean, default: true },
+  invert: { type: Boolean, default: false },
+  invertVisible: { type: Boolean, default: false },
   duplex: { type: String, default: 'one-sided' },
   copies: { type: Number, default: 1 },
   paperSize: { type: String, default: 'A4' },
@@ -191,7 +203,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'update:isColor', 'update:duplex', 'update:copies',
+  'update:isColor', 'update:invert',
+  'update:duplex', 'update:copies',
   'update:paperSize', 'update:paperType', 'update:mediaSource', 'update:printScaling', 'update:scalePercent', 'update:pageRange',
   'update:pageSet', 'update:mirror', 'update:watermarkText',
   'update:numberUp', 'update:numberUpLayout', 'update:pageBorder'
