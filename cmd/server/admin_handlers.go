@@ -20,6 +20,8 @@ var (
 	errDeleteDefaultAdmin = errors.New("default admin cannot be deleted")
 	errProtectedRole      = errors.New("protected admin role cannot change")
 	errAdminRename        = errors.New("admin username cannot change")
+	errDeleteGuest        = errors.New("guest user cannot be deleted")
+	errGuestModify        = errors.New("guest user is managed automatically")
 )
 
 type adminUserPayload struct {
@@ -49,6 +51,7 @@ type settingsPayload struct {
 	MaxPagesPerJob *int64  `json:"maxPagesPerJob"`
 	MaxUploadBytes *int64  `json:"maxUploadBytes"`
 	CustomCSS      *string `json:"customCss"`
+	GuestMode      *bool   `json:"guestMode"`
 }
 
 // customCSSMaxLen 是自定义 CSS 的字节上限（32 KiB）。
@@ -82,6 +85,12 @@ func adminCreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	payload.Username = strings.TrimSpace(payload.Username)
 	if payload.Username == "" || payload.Password == "" {
 		writeJSONError(w, http.StatusBadRequest, "username and password required")
+		return
+	}
+	// guest 是访客模式（Issue #55）保留账号名，禁止管理员手工新建同名普通账号，
+	// 否则会与 SessionHandler 的惰性创建路径分裂成两份语义不同的 guest。
+	if strings.EqualFold(payload.Username, guestUsername) {
+		writeJSONError(w, http.StatusBadRequest, "guest 是访客模式保留账号")
 		return
 	}
 	role := normalizeRole(payload.Role)
@@ -167,6 +176,12 @@ func adminUpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		if current.Username == "admin" {
 			role = store.RoleAdmin
 		}
+		// guest 是访客模式（Issue #55）用的托管账号，不能改用户名/角色/密码——
+		// 让管理员误升为 admin 就等于给公网开了后台，改密码则打破「访客登录不走口令」的
+		// 前提。要停用直接关掉访客模式开关。
+		if current.Username == guestUsername {
+			return errGuestModify
+		}
 
 		user, err := store.UpdateUser(r.Context(), tx, store.UpdateUserInput{
 			ID:           id,
@@ -190,6 +205,10 @@ func adminUpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if errors.Is(err, errProtectedRole) {
 			writeJSONError(w, http.StatusBadRequest, "admin role cannot change")
+			return
+		}
+		if errors.Is(err, errGuestModify) {
+			writeJSONError(w, http.StatusBadRequest, "guest 账号由访客模式自动管理，不能编辑")
 			return
 		}
 		if errors.Is(err, sql.ErrNoRows) {
@@ -221,11 +240,18 @@ func adminDeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		if user.Username == "admin" {
 			return errDeleteDefaultAdmin
 		}
+		if user.Username == guestUsername {
+			return errDeleteGuest
+		}
 		return store.DeleteUser(r.Context(), tx, id)
 	})
 	if err != nil {
 		if errors.Is(err, errDeleteDefaultAdmin) {
 			writeJSONError(w, http.StatusBadRequest, "admin cannot be deleted")
+			return
+		}
+		if errors.Is(err, errDeleteGuest) {
+			writeJSONError(w, http.StatusBadRequest, "guest 账号由访客模式自动管理，请通过设置关闭访客模式")
 			return
 		}
 		if errors.Is(err, sql.ErrNoRows) {
@@ -244,6 +270,7 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var maxPages int64
 	var maxBytes int64
 	var customCSS string
+	var guestMode int64
 	err := appStore.WithTx(r.Context(), true, func(tx *sql.Tx) error {
 		val, err := store.GetSettingInt(r.Context(), tx, store.SettingRetentionDays, 0)
 		if err != nil {
@@ -270,6 +297,11 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		customCSS = css
+		gm, err := store.GetSettingInt(r.Context(), tx, store.SettingGuestMode, 0)
+		if err != nil {
+			return err
+		}
+		guestMode = gm
 		return nil
 	})
 	if err != nil {
@@ -282,21 +314,30 @@ func adminGetSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		"maxPagesPerJob": maxPages,
 		"maxUploadBytes": maxBytes,
 		"customCss":      customCSS,
+		"guestMode":      guestMode != 0,
 	})
 }
 
-// publicSettingsHandler 返回登录前也需要展示的少量前端可读设置（目前只有 customCss）。
-// 未登录用户也会命中登录页/主界面样式，所以必须走公开接口而不是 /api/admin/settings。
+// publicSettingsHandler 返回登录前也需要展示的少量前端可读设置：
+//   - customCss：登录页 / 主界面都会应用（Issue #57）。
+//   - guestMode：前端据此决定登录页是否自动登入访客（Issue #55）。
+//
+// 未登录用户也会命中这些设置，所以必须走公开接口而不是 /api/admin/settings。
 func publicSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var customCSS string
+	var guestMode int64
 	_ = appStore.WithTx(r.Context(), true, func(tx *sql.Tx) error {
 		if v, err := store.GetSettingString(r.Context(), tx, store.SettingCustomCSS, ""); err == nil {
 			customCSS = v
+		}
+		if v, err := store.GetSettingInt(r.Context(), tx, store.SettingGuestMode, 0); err == nil {
+			guestMode = v
 		}
 		return nil
 	})
 	writeJSON(w, map[string]interface{}{
 		"customCss": customCSS,
+		"guestMode": guestMode != 0,
 	})
 }
 
@@ -349,6 +390,15 @@ func adminUpdateSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 		}
+		if payload.GuestMode != nil {
+			var v int64
+			if *payload.GuestMode {
+				v = 1
+			}
+			if err := store.SetSettingInt(r.Context(), tx, store.SettingGuestMode, v); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -398,7 +448,7 @@ func mapAdminUser(user store.User) adminUserResponse {
 		ID:          user.ID,
 		Username:    user.Username,
 		Role:        user.Role,
-		Protected:   user.Username == "admin",
+		Protected:   user.Username == "admin" || user.Username == guestUsername,
 		ContactName: user.ContactName,
 		Phone:       user.Phone,
 		Email:       user.Email,

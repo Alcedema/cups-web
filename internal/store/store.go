@@ -21,6 +21,7 @@ const (
 	SettingMaxPagesPerJob = "max_pages_per_job"
 	SettingMaxUploadBytes = "max_upload_bytes"
 	SettingCustomCSS      = "custom_css"
+	SettingGuestMode      = "guest_mode"
 )
 
 type Store struct {
@@ -181,6 +182,11 @@ func (s *Store) migrate(ctx context.Context) error {
 	}
 	if _, err := s.DB.ExecContext(ctx, `INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)`,
 		SettingMaxUploadBytes, "0",
+	); err != nil {
+		return fmt.Errorf("seed settings: %w", err)
+	}
+	if _, err := s.DB.ExecContext(ctx, `INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)`,
+		SettingGuestMode, "0",
 	); err != nil {
 		return fmt.Errorf("seed settings: %w", err)
 	}

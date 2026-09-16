@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 
 	"cups-web/internal/auth"
 	"cups-web/internal/store"
@@ -49,6 +50,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	if req.Username == "" || req.Password == "" {
 		writeJSONError(w, http.StatusBadRequest, "missing credentials")
+		return
+	}
+	// guest 是保留账号，只能由 SessionHandler 在开启访客模式时自动登入。
+	// 用它的用户名从公开登录接口挤进来会绕过管理员对该模式的开关意图。
+	if strings.EqualFold(strings.TrimSpace(req.Username), guestUsername) {
+		writeJSONError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
@@ -103,15 +110,102 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]bool{"ok": true})
 }
 
-// SessionHandler handles GET /api/session and returns session info if present
+// SessionHandler handles GET /api/session and returns session info if present.
+// 若访客模式（Issue #55）已开启且当前没有有效会话，就临时为保留账号 guest 签发一个
+// 会话 + CSRF cookie，让访客直接进入打印页；guest 是普通 user 角色，管理页仍拒绝进入。
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	sess, err := auth.GetSession(r)
-	if err != nil {
-		writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+	if err == nil {
+		writeJSON(w, sess)
 		return
 	}
-	writeJSON(w, sess)
+	if guestSess, ok := issueGuestSessionIfEnabled(w, r); ok {
+		writeJSON(w, guestSess)
+		return
+	}
+	writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 }
+
+// issueGuestSessionIfEnabled 检查 guest_mode 设置：开启时惰性创建/复用 guest 用户
+// 并写入 session + csrf cookie；未开启或过程出错时返回 false，让调用方走原路径。
+// 惰性创建保证关闭访客模式的部署里没有多余的 guest 账号常驻数据库。
+//
+// 并发安全：两个首次访问的会话如果几乎同时命中此函数，两侧 GetUserByUsername 都会
+// 报 ErrNoRows，随后一侧 CreateUser 拿到 UNIQUE 约束错误——遇到这种情况就再读一次
+// 已存在的行，让后到者复用而不是回落到 401。
+func issueGuestSessionIfEnabled(w http.ResponseWriter, r *http.Request) (auth.Session, bool) {
+	user, ok := loadOrCreateGuest(r)
+	if !ok {
+		return auth.Session{}, false
+	}
+	sess := auth.Session{UserID: user.ID, Username: user.Username, Role: user.Role}
+	if err := auth.SetSession(w, r, sess); err != nil {
+		return auth.Session{}, false
+	}
+	http.SetCookie(w, auth.NewCSRFCookie(r, randomToken()))
+	return sess, true
+}
+
+func loadOrCreateGuest(r *http.Request) (store.User, bool) {
+	var enabled bool
+	var user store.User
+	err := appStore.WithTx(r.Context(), false, func(tx *sql.Tx) error {
+		v, err := store.GetSettingInt(r.Context(), tx, store.SettingGuestMode, 0)
+		if err != nil {
+			return err
+		}
+		if v == 0 {
+			return nil
+		}
+		enabled = true
+		existing, err := store.GetUserByUsername(r.Context(), tx, guestUsername)
+		if err == nil {
+			user = existing
+			return nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(randomToken()), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		created, err := store.CreateUser(r.Context(), tx, store.CreateUserInput{
+			Username:     guestUsername,
+			PasswordHash: string(hash),
+			Role:         store.RoleUser,
+			Protected:    true,
+		})
+		if err != nil {
+			return err
+		}
+		user = created
+		return nil
+	})
+	if !enabled {
+		return store.User{}, false
+	}
+	if err == nil {
+		return user, true
+	}
+	// 并发首访冲突：另一侧刚刚把 guest 插进去，回退到只读事务再读一次。
+	var retry store.User
+	if err2 := appStore.WithTx(r.Context(), true, func(tx *sql.Tx) error {
+		u, err := store.GetUserByUsername(r.Context(), tx, guestUsername)
+		if err != nil {
+			return err
+		}
+		retry = u
+		return nil
+	}); err2 == nil {
+		return retry, true
+	}
+	return store.User{}, false
+}
+
+// guestUsername 是访客模式下自动登入的保留账号名。写死小写字符串而不是配置项，
+// 是为了让「保护 guest 不被删/改名/密码登录」这几处判断都指向同一个真值。
+const guestUsername = "guest"
 
 func CSRFHandler(w http.ResponseWriter, r *http.Request) {
 	// Not used: CSRF token is set on login; provide endpoint if needed

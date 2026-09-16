@@ -97,6 +97,13 @@
             <span class="text-sm">保存打印历史</span>
           </label>
         </div>
+        <div class="md:col-span-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <UCheckbox v-model="settings.guestMode" />
+            <span class="text-sm">开启访客模式（免登录）</span>
+          </label>
+          <p class="text-xs text-muted mt-1 ml-6">开启后未登录访问会自动以内置 guest 账号进入打印页；管理页仍需登录 admin。仅建议在可信内网使用。</p>
+        </div>
         <div class="flex items-end gap-2 md:col-span-4">
           <UButton color="primary" @click="saveSettings" icon="i-lucide-save" :loading="savingSettings" :disabled="savingSettings">保存设置</UButton>
           <UButton variant="outline" @click="showCleanupConfirm = true" icon="i-lucide-trash-2" :loading="cleaningUp" :disabled="cleaningUp">立即清理</UButton>
@@ -166,7 +173,7 @@ const form = ref({
 })
 const printFilters = ref({ username: '', start: '', end: '' })
 const printRecords = ref([])
-const settings = ref({ retentionDays: '', saveHistory: true, maxPagesPerJob: '0', maxUploadMB: '0', customCss: '' })
+const settings = ref({ retentionDays: '', saveHistory: true, maxPagesPerJob: '0', maxUploadMB: '0', customCss: '', guestMode: false })
 const showCleanupConfirm = ref(false)
 
 const savingUser = ref(false)
@@ -352,6 +359,7 @@ async function loadSettings() {
   const bytes = Number(data.maxUploadBytes || 0)
   settings.value.maxUploadMB = String(bytes > 0 ? Math.round(bytes / (1024 * 1024)) : 0)
   settings.value.customCss = typeof data.customCss === 'string' ? data.customCss : ''
+  settings.value.guestMode = data.guestMode === true
 }
 
 async function triggerCleanup() {
@@ -393,7 +401,8 @@ async function saveSettings() {
       saveHistory: settings.value.saveHistory,
       maxPagesPerJob: maxPages,
       maxUploadBytes: maxMB * 1024 * 1024,
-      customCss: settings.value.customCss || ''
+      customCss: settings.value.customCss || '',
+      guestMode: settings.value.guestMode === true
     }
     const resp = await fetch('/api/admin/settings', {
       method: 'PUT',
