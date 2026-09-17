@@ -59,6 +59,16 @@ func main() {
 		log.Fatal("failed to create uploads dir: ", err)
 	}
 
+	// SCAN_DIR:扫描产物落盘目录(issue #111)。生产环境挂持久卷,重启不丢历史扫描件。
+	// scanDir 声明在 scan_registry.go 中,scan_handlers.go 通过 os.OpenInRoot 强制约束到目录内。
+	scanDir = os.Getenv("SCAN_DIR")
+	if scanDir == "" {
+		scanDir = "scans"
+	}
+	if err := os.MkdirAll(scanDir, 0755); err != nil {
+		log.Fatal("failed to create scans dir: ", err)
+	}
+
 	if err := auth.SetupSecureCookie(appStore.DB); err != nil {
 		log.Fatal("failed to setup secure cookie: ", err)
 	}
@@ -119,6 +129,19 @@ func main() {
 	// CUPS 任务列表 / 取消:任何登录用户可用,权限由 CUPS 按 owner 校验(issue #60)。
 	protected.HandleFunc("/cups-jobs", cupsJobsHandler).Methods("GET")
 	protected.HandleFunc("/cups-jobs/cancel", cupsCancelJobHandler).Methods("POST")
+
+	// 扫描(issue #111):任何登录用户可用。hp-scan(HPLIP)在容器 dbus/HPLIP daemon
+	// 依赖不稳定,即使补启 dbus-daemon 仍报 SANE code=9;这里改走 scanimage 子进程,
+	// 与宿主 Debian 标准 SANE 栈的验证一致。同一台扫描仪的并发由 SANE 后端处理。
+	protected.HandleFunc("/scan/devices", scanListDevicesHandler).Methods("GET")
+	protected.HandleFunc("/scan/options", scanListOptionsHandler).Methods("GET")
+	protected.HandleFunc("/scan/jobs", scanCreateJobHandler).Methods("POST")
+	// jobId 是 randomToken() 生成的不透明大写 base32 串,与 driver-job id 同样只放字母数字。
+	protected.HandleFunc("/scan/jobs/{id:[A-Za-z0-9]+}", scanGetJobHandler).Methods("GET")
+	protected.HandleFunc("/scan/jobs/{id:[A-Za-z0-9]+}", scanCancelJobHandler).Methods("DELETE")
+	protected.HandleFunc("/scan/records", scanListRecordsHandler).Methods("GET")
+	protected.HandleFunc("/scan/records/{id:[0-9]+}/file", scanDownloadHandler).Methods("GET")
+	protected.HandleFunc("/scan/records/{id:[0-9]+}", scanDeleteRecordHandler).Methods("DELETE")
 
 	admin := api.PathPrefix("/admin").Subrouter()
 	admin.Use(middleware.RequireSession)

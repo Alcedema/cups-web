@@ -19,6 +19,12 @@ const routes = [
     name: 'scheduled',
     component: () => import('../views/ScheduledView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/scan',
+    name: 'scan',
+    component: () => import('../views/ScanView.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

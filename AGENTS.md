@@ -121,6 +121,24 @@ cups-web/
 | GET | `/api/print-records` | 打印记录 |
 | GET | `/api/print-records/{id}/file` | 下载原始文件 |
 | POST | `/api/print-records/{id}/reprint` | 重打参数预填 |
+| GET | `/api/scan/devices` | 列出扫描仪(`scanimage -L`) |
+| GET | `/api/scan/options?device=<name>` | 列出设备参数(`scanimage -A`,MVP 只关心 mode/resolution/source) |
+| POST | `/api/scan/jobs` | 提交扫描任务(异步)→ `202 {jobId, recordId, filename}` |
+| GET | `/api/scan/jobs/{id}` | 轮询扫描任务状态 + 增量日志 |
+| DELETE | `/api/scan/jobs/{id}` | 取消运行中的扫描任务 |
+| GET | `/api/scan/records` | 扫描记录(admin 可用 `?username=` 过滤) |
+| GET | `/api/scan/records/{id}/file` | 下载扫描文件 |
+| DELETE | `/api/scan/records/{id}` | 删除扫描记录 + 文件 |
+
+#### 扫描异步任务要点(issue #111)
+
+- **改走 `scanimage` 子进程,不用 hplip 的 `hp-scan`**:hp-scan 依赖容器内 HPLIP daemon,即使补启 `dbus-daemon --system --fork` 仍报 `SANE: Error during device I/O (code=9)`。Debian 标准 SANE 栈(`sane-utils` + `libsane-hpaio`)在同宿主同硬件已验证可用。
+- 与驱动任务不同,扫描**允许并发**——scanimage 无 apt/dpkg 全局锁,同一台扫描仪的独占由 SANE 后端负责。
+- 硬超时 5 分钟(`scanJobTimeout`),context 派生自 `context.Background()`,绕开 http.Server `WriteTimeout=120s` 掐子进程。
+- PDF 走 **PNG → gs 合成**:scanimage 先出临时 PNG,再 `gs -sDEVICE=pdfwrite -dSAFER -dNOPAUSE -dBATCH` 合成 PDF,最后清理临时文件。scanimage 有些后端不支持直接 `--format=pdf`,统一走这一条路径规避驱动差异。
+- 内存态任务表保留 1 小时,过期只删内存条目,不动 `scan_records` 表与磁盘文件——那属于用户可见资产。
+- 落盘目录由 `SCAN_DIR` 决定(默认 `scans/`;AIO 镜像里 `docker-compose.yml` 设为 `/scans` 并挂 `./.scans` 持久卷)。**所有下载/删除都用 `os.OpenInRoot(scanDir, ...)` 收敛**,阻挡 `../` 逃逸。
+- 命令行注入面:device 名先经 `scanimage -L` 白名单校验,resolution 走 `strconv.Atoi` 环回,mode/format 白名单(Color/Gray/Lineart × png/jpeg/pdf),全部走变参 `exec.CommandContext` 无 shell。
 
 #### `/api/printers` 返回形状
 
@@ -217,6 +235,25 @@ SQLite，`WAL` + `foreign_keys`；迁移在 `store.go::migrate()` 中用幂等 S
 | `created_at` | TEXT | RFC3339 UTC |
 
 > 除 `is_duplex` / `is_color` 外，其余打印参数列为 Issue #68 新增（完整参数快照落库，供「重新打印」预填）。`page_set` 存用户原始选择（`even-reverse` 等），不是重排后的值。
+
+### `scan_records`(issue #111)
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | INTEGER PK | 自增 |
+| `user_id` | INTEGER FK | 扫描者(级联删除) |
+| `device` | TEXT | SANE URI(如 `hpaio:/usb/...`) |
+| `mode` | TEXT | Color / Gray / Lineart |
+| `resolution` | INTEGER | dpi(50–4800) |
+| `source` | TEXT | ADF / Flatbed / …;空串表示用设备默认 |
+| `format` | TEXT | png / jpeg / pdf |
+| `filename` / `stored_path` | TEXT | 相对 `SCAN_DIR` |
+| `size_bytes` | INTEGER | 产物大小,失败为 0 |
+| `status` | TEXT | `running` / `succeeded` / `failed` / `cancelled` |
+| `err_msg` | TEXT | 失败原因 |
+| `created_at` / `finished_at` | TEXT | RFC3339 UTC |
+
+索引 `idx_scan_records_user_time (user_id, created_at)`。管理员可看全表,普通用户按 `username` 过滤。
 
 ### `settings`
 
@@ -461,6 +498,7 @@ make docker-build   # AIO 镜像
 | `security_opt: [apparmor:unconfined]` | PVE LXC AppArmor DENIED（issue #91） |
 | `./.etc:/etc/cups`、`./.data:/data`、`./.uploads:/uploads` | 持久化 |
 | **`./.drivers:/opt/cups-drivers/data`** | **驱动快照持久化**（删 = 重启丢驱动） |
+| **`./.scans:/scans`** + `SCAN_DIR=/scans` | **扫描产物持久化**（issue #111）；不挂则容器重启后历史扫描件全丢，DB 里的记录会指向不存在的文件 |
 | `/dev/bus/usb:/dev/bus/usb` + `device_cgroup_rules` | USB 热插拔（issue #81） |
 | `/run/udev:/run/udev:ro` | libusb 设备属性（可选） |
 

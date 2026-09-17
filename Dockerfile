@@ -195,6 +195,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       hpijs-ppds \
       hp-ppd \
       hplip \
+      # ── SANE 扫描栈（issue #111）──
+      # hplip 自带的 hp-scan 在容器里的 dbus/HPLIP 服务依赖有已知问题（补
+      # 启 dbus-daemon 后仍报 "SANE: Error during device I/O code=9"）。
+      # 装标准 SANE 栈让 cups-web 通过 `scanimage` 子进程扫描——同宿主同
+      # 打印机 Debian 标准 SANE 栈已验证可用。
+      #
+      # - sane-utils：提供 scanimage 命令行入口，cups-web Web UI 走此路径
+      # - libsane-hpaio：HPAIO backend，HP MFP（如 LaserJet M1005）扫描依赖
+      #
+      # libsane1 由 sane-utils 依赖带入，其余 HP/其它厂商 backend 已随
+      # hplip 与 printer-driver-all 附带。
+      sane-utils \
+      libsane-hpaio \
       avahi-daemon \
       # avahi-utils（issue #107）：提供 avahi-browse / avahi-resolve，
       # 排查"发现不了网络打印机 / AirPrint 搜不到"时在容器内直接验证 mDNS。

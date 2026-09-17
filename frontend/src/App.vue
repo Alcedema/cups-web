@@ -37,6 +37,15 @@
                 定时
               </UButton>
               <UButton
+                :variant="route.path === '/scan' ? 'soft' : 'ghost'"
+                :color="route.path === '/scan' ? 'primary' : 'neutral'"
+                size="xs"
+                icon="i-lucide-scan-line"
+                @click="router.push('/scan')"
+              >
+                扫描
+              </UButton>
+              <UButton
                 v-if="isAdmin"
                 :variant="route.path === '/admin' ? 'soft' : 'ghost'"
                 :color="route.path === '/admin' ? 'primary' : 'neutral'"
@@ -165,6 +174,7 @@ const menuItems = computed(() => {
   if (session.value) {
     nav.push({ label: '打印', icon: 'i-lucide-file-text', onSelect: () => router.push('/print') })
     nav.push({ label: '定时', icon: 'i-lucide-calendar-clock', onSelect: () => router.push('/scheduled') })
+    nav.push({ label: '扫描', icon: 'i-lucide-scan-line', onSelect: () => router.push('/scan') })
   }
   if (isAdmin.value) {
     nav.push({ label: '管理', icon: 'i-lucide-settings', onSelect: () => router.push('/admin') })

@@ -51,6 +51,18 @@
 - **打印选项**：份数、单双面、彩色/黑白、纸张大小、纸张类型、页面方向、页码范围、缩放、镜像打印
 - **实时预览**：支持 PDF 预览、纸张方向的可视化预览、页数估算
 
+### 扫描能力（[Issue #111](https://github.com/hanxi/cups-web/issues/111)）
+
+镜像内置 `scanimage` + `libsane-hpaio`，Web 界面「扫描」入口对所有登录用户开放：
+
+- **单页平板扫描**：MVP 支持单张扫描；ADF / 双面暂未接入
+- **输出格式**：PNG（无损）/ JPEG（较小）/ PDF（先扫成 PNG，再用 Ghostscript 合成，规避不同 SANE 后端对 `--format=pdf` 支持不一致的问题）
+- **可选参数**：模式（Color / Gray / Lineart）、分辨率（75–600 dpi）、来源（Flatbed / ADF，按设备实际能力显示）
+- **异步任务 + 实时日志**：提交后立即返回 `jobId`，页面每 1.5 秒轮询进度并展示 `scanimage` / `gs` 的实时输出；硬超时 5 分钟
+- **历史记录持久化**：扫描件默认存到 `SCAN_DIR`（`docker-compose.yml` 里挂到 `./.scans:/scans`），元数据落 `scan_records` 表，普通用户只看得到自己的记录，管理员可看全站
+
+> ⚠️ **不用 hplip 自带的 `hp-scan`**：容器里 HPLIP daemon 与 dbus 依赖不稳定，即便补启 `dbus-daemon --system --fork` 仍报 `SANE: Error during device I/O (code=9)`。改走标准 SANE 栈的 `scanimage` 子进程，同宿主同硬件（如 HP LaserJet M1005 MFP）已验证可用。
+
 ### 打印机驱动
 
 镜像内预装了 Debian `printer-driver-all` 等通用驱动包，覆盖大部分常见打印机。对于特定品牌打印机，提供**按需手动安装**的驱动脚本和 Web 管理界面：
@@ -201,11 +213,14 @@ services:
       - TZ=${TZ:-Asia/Shanghai}
       # host 网络下 Web 直接监听宿主端口，默认 1180（与旧版端口映射一致）
       - LISTEN_ADDR=${LISTEN_ADDR:-:1180}
+      # 扫描件输出目录，落在下面 ./.scans:/scans 卷里
+      - SCAN_DIR=${SCAN_DIR:-/scans}
     volumes:
       - ./.etc:/etc/cups
       - ./.data:/data
       - ./.uploads:/uploads
       - ./.drivers:/opt/cups-drivers/data
+      - ./.scans:/scans
       - /dev/bus/usb:/dev/bus/usb
       - /run/udev:/run/udev:ro
     device_cgroup_rules:
@@ -348,6 +363,7 @@ export LISTEN_ADDR=:8080
 | `PRINTER_HOST_ALLOWLIST` | 打印机 URI 的主机白名单，逗号分隔。收紧 SSRF 面 | 空（不限制） |
 | `PRINTER_BLOCK_PRIVATE` | `true` 时拒绝指向私网地址的打印机 URI | `false` |
 | `OFD_CONVERTER_JAR` | OFD → PDF 转换器 jar 路径 | `/ofd-converter.jar` |
+| `SCAN_DIR` | 扫描件输出目录，Docker 内挂到 `./.scans` | `scans` |
 
 > 💡 `.env.example` 只列了 Docker 部署常用的三个：`CUPSADMIN` / `CUPSPASSWORD` / `TZ`。这三个在镜像里都已有内置默认值（`print` / `print` / `Asia/Shanghai`），不写 `.env` 也能启动。
 >
@@ -380,6 +396,7 @@ Docker 默认卷映射：
 | `./.data` | `/data` | cups-web 数据库 |
 | `./.uploads` | `/uploads` | 上传的原始文件与转换后 PDF |
 | `./.drivers` | `/opt/cups-drivers/data` | 手动安装的打印机驱动快照（⚠️ 删除即丢失全部手动装的驱动） |
+| `./.scans` | `/scans` | 扫描件存储目录，路径由 `SCAN_DIR` 决定；元数据落 `.data/cups-web.db` 的 `scan_records` 表 |
 
 此外还有两个**非数据类**的挂载，用于 USB 打印机识别与热插拔：
 

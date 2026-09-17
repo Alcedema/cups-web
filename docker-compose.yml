@@ -39,6 +39,8 @@ services:
       # host 网络下没有端口映射可言，用 LISTEN_ADDR 让 Web 直接监听 1180，
       # 与旧桥接时代的宿主端口保持一致，老用户的书签 / 反向代理配置不用改。
       - LISTEN_ADDR=${LISTEN_ADDR:-:1180}
+      # 扫描产物落盘目录(issue #111);见下方 ./.scans:/scans 卷的说明。
+      - SCAN_DIR=${SCAN_DIR:-/scans}
     # ⚠️ 不要挂载宿主的 /run/dbus/system_bus_socket（issue #107）：
     # 旧版为借用宿主 avahi 广播 AirPrint（issue #94）挂了这个 socket，
     # 但宿主没装 avahi-daemon 时反而害了容器——socket 路径被宿主文件占用，
@@ -59,6 +61,10 @@ services:
       - ./.etc:/etc/cups
       - ./.data:/data
       - ./.uploads:/uploads
+      # 扫描产物持久化（issue #111）：/scans 是 SCAN_DIR 默认值,cups-web 把每次
+      # 扫描的 PNG/JPEG/PDF 写到这里,并在 scan_records 表里留元数据。不挂载
+      # 这个卷则容器重启后历史扫描件全丢,DB 里的记录会指向不存在的文件。
+      - ./.scans:/scans
       # 驱动持久化快照目录：driver-install 把每个手动安装驱动的产物文件
       # （PPD / filter / backend / firmware / 闭源 .so）按 manifest.txt 拷进
       # /opt/cups-drivers/data/<driver>/，容器重启时 entrypoint 的

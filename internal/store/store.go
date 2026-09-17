@@ -137,6 +137,25 @@ func (s *Store) migrate(ctx context.Context) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_scheduled_prints_next
 			ON scheduled_prints(enabled, next_run_at)`,
+		`CREATE TABLE IF NOT EXISTS scan_records (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			device TEXT NOT NULL,
+			mode TEXT NOT NULL DEFAULT 'color',
+			resolution INTEGER NOT NULL DEFAULT 300,
+			source TEXT NOT NULL DEFAULT '',
+			format TEXT NOT NULL DEFAULT 'png',
+			filename TEXT NOT NULL,
+			stored_path TEXT NOT NULL,
+			size_bytes INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL,
+			err_msg TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			finished_at TEXT,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_scan_records_user_time
+			ON scan_records(user_id, created_at)`,
 		`CREATE TABLE IF NOT EXISTS print_jobs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			user_id INTEGER NOT NULL,

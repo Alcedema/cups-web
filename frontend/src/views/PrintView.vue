@@ -989,9 +989,9 @@ async function uploadAndPrintBatch() {
   batchProgress.value = { current: 0, total: 0 }
 }
 
-// 通过后端 /api/convert 将���或多张图片合成为单个 PDF。
+// 通过后端 /api/convert 将单或多张图片合成为单个 PDF。
 // - 单图时传 `file` 字段；多图时传多个 `files` 字段，由后端 convertImagesMultiToPDF 合并。
-// - HEIC 已由 processFile / processMultipleImages 提前���换为 JPEG，这里无需特殊处理。
+// - HEIC 已由 processFile / processMultipleImages 提前转换为 JPEG，这里无需特殊处理。
 // - 上传前用 downscaleImageIfNeeded 在浏览器端预压缩：长边 >3000px 的大图缩成 JPEG，
 //   避免多张原图合并时撞到反向代理的 client_max_body_size 触发 413（Issue #42）。
 //   阈值与后端 imageDownscaleMaxEdge 对齐，服务端拿到时已是合理尺寸，无需再 downscale。
