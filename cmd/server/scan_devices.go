@@ -95,15 +95,16 @@ func parseScanDeviceLine(line string) (ScanDevice, bool) {
 	return dev, true
 }
 
-// listScanOptions 调用 `scanimage -A -d <device>` 列出该设备的可选参数(issue #111)。
+// listScanOptions 调用 `scanimage -A -d <device>` 列出该设备的可选参数
+// (issue #111 / #112)。提取的字段见 parseScanOptions。
 //
-// 只提取 MVP 需要的三项:mode / resolution / source。
 // 输出格式片段(SANE 官方 CLI):
 //
 //	-x 0..215.9mm (in steps of 0.0211639) [215.9]
 //	--mode Color|Gray|Lineart [Gray]
 //	--resolution 75|100|150|200|300|600dpi [150]
 //	--source ADF|Flatbed [Flatbed]
+//	--br-x 0..215.9mm (in steps of 0.0211639) [215.9]
 //
 // 部分驱动会给出 range 而不是枚举(--resolution 50..600dpi (in steps of 1))。
 // 解析逻辑对两种格式都容忍。
@@ -118,28 +119,72 @@ func listScanOptions(ctx context.Context, device string) (map[string]ScanOption,
 	return opts, raw, nil
 }
 
-// parseScanOptions 解析 `scanimage -A` 的输出,仅关心 mode/resolution/source。
+// parseScanOptions 解析 `scanimage -A` 的输出,提取 MVP 需要的参数。
+//
+//   - mode / resolution / source: 前端表单直接使用
+//   - br-x / br-y / tl-x / tl-y: 用于给 escl (eSCL/AirScan) 后端显式指定扫描区域,
+//     否则默认 br-x/br-y 会被 rounded to 0,触发 sane_start: Invalid argument
+//     (issue #112)
+//   - 短开关 -l/-t/-x/-y: 老式 SANE 后端语义;-l/-t 对齐到 tl-x/tl-y,
+//     -x/-y 是窗口宽/高,单独保留为 "x"/"y"
+//
 // 兼容以 `--<name>` 或 `-<x>` 开头的行;默认值(方括号)可选,缺省时留空。
 func parseScanOptions(raw string) map[string]ScanOption {
 	opts := map[string]ScanOption{}
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimSpace(line)
-		if !strings.HasPrefix(line, "--") {
+		if !strings.HasPrefix(line, "-") {
 			continue
 		}
 		nameEnd := strings.IndexAny(line, " \t")
 		if nameEnd < 0 {
 			continue
 		}
-		name := strings.TrimPrefix(line[:nameEnd], "--")
+		head := line[:nameEnd]
 		body := strings.TrimSpace(line[nameEnd:])
 
+		var name string
+		switch {
+		case strings.HasPrefix(head, "--"):
+			name = strings.TrimPrefix(head, "--")
+		case len(head) == 2: // 短开关 "-l" / "-x" 等
+			switch head[1] {
+			case 'l':
+				name = "tl-x"
+			case 't':
+				name = "tl-y"
+			case 'x':
+				name = "x"
+			case 'y':
+				name = "y"
+			default:
+				continue
+			}
+		default:
+			continue
+		}
+
 		switch name {
-		case "mode", "resolution", "source":
-			opts[name] = parseScanOptionBody(name, body)
+		case "mode", "resolution", "source",
+			"br-x", "br-y", "tl-x", "tl-y", "x", "y":
+			// 短开关和长开关同名时,不覆盖已有条目——SANE 通常同时列出
+			// "-l ..." 和后续的 "--tl-x ..." (若存在),二者语义等价。
+			if _, ok := opts[name]; !ok {
+				opts[name] = parseScanOptionBody(name, body)
+			}
 		}
 	}
 	return opts
+}
+
+// scanNumericValueRegexp 用于校验 parseScanOptions 抽出的 min/max/default,
+// 只允许可选负号 + 数字 + 可选小数部分。runScanimage 会把这些值再拼回给
+// scanimage 子进程,守卫住此正则可以避免 -A 输出被污染后注入其它参数。
+var scanNumericValueRegexp = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
+
+// isNumericScanValue 判断 s 是否为合法的数字型 scanimage 参数值。
+func isNumericScanValue(s string) bool {
+	return scanNumericValueRegexp.MatchString(s)
 }
 
 var scanOptionRangeRegexp = regexp.MustCompile(`^([\-\d.]+)\.\.([\-\d.]+)([a-zA-Z]*)`)

@@ -265,12 +265,67 @@ func runScanimage(ctx context.Context, logBuf *scanBuffer, device, mode string, 
 	if source != "" {
 		args = append(args, "--source", source)
 	}
+	// 显式补几何参数,规避 escl (eSCL/AirScan) 后端默认 br-x/br-y 被 rounded
+	// 到 0 后 sane_start 报 Invalid argument 的问题(issue #112)。
+	// 老式后端(如 hpaio)通常没有 br-x/br-y,此时不追加,行为与之前一致。
+	args = append(args, buildScanGeometryArgs(ctx, logBuf, device)...)
 	cmd := exec.CommandContext(ctx, "scanimage", args...)
 	cmd.Stdout = logBuf
 	cmd.Stderr = logBuf
 	fmt.Fprintf(logBuf, "$ scanimage %s\n", strings.Join(args, " "))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("scanimage 失败: %w", err)
+	}
+	return nil
+}
+
+// buildScanGeometryArgs 探测设备的几何选项并返回需要追加给 scanimage 的参数。
+//
+// 优先级:
+//   - 同时有 --tl-x/--tl-y/--br-x/--br-y 的 range max → 追加左上顶到 0、
+//     右下顶到 max(escl 后端语义)
+//   - 否则同时有 -x/-y 的 range max → 追加 -x max -y max(老式 SANE 语义,
+//     -x/-y 是窗口宽/高;单靠 -x/-y 时不需要指定原点)
+//   - 都没有 → 返回空切片,行为不变
+//
+// listScanOptions 报错、返回值缺失或抽出的 max 无法通过数字守卫时,一律降级
+// 到「不追加」并把原因写进日志,保留扫描任务本身继续跑的机会。
+func buildScanGeometryArgs(ctx context.Context, logBuf *scanBuffer, device string) []string {
+	// -A 有时候会因为设备刚断连等原因失败;别让它拖垮扫描任务本身,
+	// 给一个独立的短超时。
+	optCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	opts, _, err := listScanOptions(optCtx, device)
+	if err != nil {
+		fmt.Fprintf(logBuf, "warn: 探测扫描区域参数失败,跳过几何设置: %v\n", err)
+		return nil
+	}
+
+	maxOf := func(name string) (string, bool) {
+		opt, ok := opts[name]
+		if !ok || opt.Type != "range" {
+			return "", false
+		}
+		if !isNumericScanValue(opt.Max) {
+			return "", false
+		}
+		return opt.Max, true
+	}
+
+	if brX, okX := maxOf("br-x"); okX {
+		if brY, okY := maxOf("br-y"); okY {
+			return []string{
+				"--tl-x", "0",
+				"--tl-y", "0",
+				"--br-x", brX,
+				"--br-y", brY,
+			}
+		}
+	}
+	if x, okX := maxOf("x"); okX {
+		if y, okY := maxOf("y"); okY {
+			return []string{"-x", x, "-y", y}
+		}
 	}
 	return nil
 }

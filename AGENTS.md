@@ -139,6 +139,7 @@ cups-web/
 - 内存态任务表保留 1 小时,过期只删内存条目,不动 `scan_records` 表与磁盘文件——那属于用户可见资产。
 - 落盘目录由 `SCAN_DIR` 决定(默认 `scans/`;AIO 镜像里 `docker-compose.yml` 设为 `/scans` 并挂 `./.scans` 持久卷)。**所有下载/删除都用 `os.OpenInRoot(scanDir, ...)` 收敛**,阻挡 `../` 逃逸。
 - 命令行注入面:device 名先经 `scanimage -L` 白名单校验,resolution 走 `strconv.Atoi` 环回,mode/format 白名单(Color/Gray/Lineart × png/jpeg/pdf),全部走变参 `exec.CommandContext` 无 shell。
+- 🚫 **escl (eSCL/AirScan) 后端必须显式传扫描区域**(issue #112):不指定 `--tl-x/--tl-y/--br-x/--br-y` 时 br-x/br-y 会被 rounded 到 0,`sane_start` 报 `Invalid argument`。`runScanimage` 会先跑 `scanimage -A` 探测,存在 `br-x/br-y` range 时补一对左上 0 / 右下 max;老 backend(hpaio 无 br-x/br-y)不追加,行为保持既有。`-A` 输出被污染时通过 `isNumericScanValue` 正则守卫拒绝拼进命令行。
 
 #### `/api/printers` 返回形状
 
