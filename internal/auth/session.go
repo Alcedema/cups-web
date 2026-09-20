@@ -209,6 +209,11 @@ func NewCSRFCookie(r *http.Request, token string) *http.Cookie {
 }
 
 func GetSession(r *http.Request) (Session, error) {
+	// API Key 中间件在 r.Context() 上挂载 Session 后，所有下游 handler 通过
+	// GetSession 都能拿到同一份归属信息，无需分辨鉴权来源。
+	if sess, ok := SessionFromContext(r.Context()); ok {
+		return sess, nil
+	}
 	var sess Session
 	if s == nil {
 		return sess, errors.New("securecookie not initialized")
@@ -222,4 +227,34 @@ func GetSession(r *http.Request) (Session, error) {
 		return sess, err
 	}
 	return sess, nil
+}
+
+// sessionCtxKey 是私有 context key 类型，避免与其他包冲突。
+type sessionCtxKey struct{}
+
+// WithSession 把外部认证（例如 API Key）解析出的 Session 挂到 context 上，
+// 供下游 GetSession 无差别读取。
+func WithSession(ctx context.Context, sess Session) context.Context {
+	return context.WithValue(ctx, sessionCtxKey{}, sess)
+}
+
+// SessionFromContext 返回 context 上的 Session 与是否存在。
+func SessionFromContext(ctx context.Context) (Session, bool) {
+	sess, ok := ctx.Value(sessionCtxKey{}).(Session)
+	return sess, ok
+}
+
+// apiKeyMarker 用来标记「本请求已通过 API Key 鉴权」，中间件 ValidateCSRF 据
+// 此豁免 double-submit 校验。单独一个 key，值恒为 true 即可。
+type apiKeyMarker struct{}
+
+// WithAPIKeyAuth 把「本请求已通过 API Key 鉴权」的标记挂到 context 上。
+func WithAPIKeyAuth(ctx context.Context) context.Context {
+	return context.WithValue(ctx, apiKeyMarker{}, true)
+}
+
+// IsAPIKeyAuth 报告当前请求是否由 API Key 通道鉴权。
+func IsAPIKeyAuth(ctx context.Context) bool {
+	v, _ := ctx.Value(apiKeyMarker{}).(bool)
+	return v
 }

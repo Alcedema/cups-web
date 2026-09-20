@@ -97,6 +97,8 @@ cups-web/
 
 > **CSRF 约定**：登录成功后下发 `csrf_token` Cookie（非 HttpOnly）；前端非 GET 请求带 `X-CSRF-Token` 头。
 
+> **API Key 通道（issue #113）**：`protected` 与 `admin` 子路由都在 `RequireSession` 之前挂了 `middleware.APIKeyAuth`。请求头 `Authorization: Bearer cw_...` 或 `X-API-Key: cw_...` 命中数据库 `api_keys.token_hash`（SHA-256 hex）后，中间件把归属 `auth.Session` 注入 context，`RequireSession`/`RequireAdmin` 无差别放行，`ValidateCSRF` 通过 `auth.IsAPIKeyAuth` 豁免 double-submit 校验。guest 保留账号硬编码禁止签发/使用 key；`POST /api/api-keys` 与 `DELETE /api/api-keys/{id}` 在 handler 里显式拒绝 API Key 通道，防止密钥自繁殖。
+
 ### 公开接口
 
 | 方法 | 路径 | 说明 |
@@ -129,6 +131,9 @@ cups-web/
 | GET | `/api/scan/records` | 扫描记录(admin 可用 `?username=` 过滤) |
 | GET | `/api/scan/records/{id}/file` | 下载扫描文件 |
 | DELETE | `/api/scan/records/{id}` | 删除扫描记录 + 文件 |
+| GET | `/api/api-keys` | 列出自己名下的 API 密钥（不含明文）(issue #113) |
+| POST | `/api/api-keys` | 生成新密钥，明文仅此响应返回一次；仅浏览器 session 可调 |
+| DELETE | `/api/api-keys/{id}` | 删除自己名下的密钥；仅浏览器 session 可调 |
 
 #### 扫描异步任务要点(issue #111)
 

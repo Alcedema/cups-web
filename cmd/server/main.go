@@ -92,6 +92,10 @@ func main() {
 	api.HandleFunc("/public-settings", publicSettingsHandler).Methods("GET")
 
 	protected := api.PathPrefix("").Subrouter()
+	// APIKeyAuth 位于 RequireSession 之前：识别到合法 key 时把归属 Session
+	// 注入 context，让下游 RequireSession/RequireAdmin 无差别放行；
+	// ValidateCSRF 会豁免 API Key 通道的 double-submit 校验（issue #113）。
+	protected.Use(middleware.APIKeyAuth(appStore))
 	protected.Use(middleware.RequireSession)
 	protected.Use(middleware.ValidateCSRF)
 	protected.HandleFunc("/me", MeHandler).Methods("GET")
@@ -143,7 +147,15 @@ func main() {
 	protected.HandleFunc("/scan/records/{id:[0-9]+}/file", scanDownloadHandler).Methods("GET")
 	protected.HandleFunc("/scan/records/{id:[0-9]+}", scanDeleteRecordHandler).Methods("DELETE")
 
+	// API 密钥自服务（issue #113）：登录用户管理自己名下的密钥。创建 / 删除
+	// 已在 handler 内禁止 API Key 通道调用（避免密钥自繁殖）。
+	protected.HandleFunc("/api-keys", apiKeyListHandler).Methods("GET")
+	protected.HandleFunc("/api-keys", apiKeyCreateHandler).Methods("POST")
+	protected.HandleFunc("/api-keys/{id:[0-9]+}", apiKeyDeleteHandler).Methods("DELETE")
+
 	admin := api.PathPrefix("/admin").Subrouter()
+	// admin 子路由同样先跑 APIKeyAuth：管理员用自己的 key 也能访问管理接口。
+	admin.Use(middleware.APIKeyAuth(appStore))
 	admin.Use(middleware.RequireSession)
 	admin.Use(middleware.RequireAdmin)
 	admin.Use(middleware.ValidateCSRF)

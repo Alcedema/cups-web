@@ -43,6 +43,12 @@ func ValidateCSRF(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		// API Key 通道豁免 double-submit：key 本身就是不可预测的凭据，浏览器
+		// 也不会自动携带，攻击者无法通过跨源诱导发起带 key 的请求（Issue #113）。
+		if auth.IsAPIKeyAuth(r.Context()) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		cookie, err := r.Cookie("csrf_token")
 		if err != nil {
 			http.Error(w, "missing csrf cookie", http.StatusForbidden)

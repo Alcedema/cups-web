@@ -25,6 +25,12 @@ const routes = [
     name: 'scan',
     component: () => import('../views/ScanView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/api-keys',
+    name: 'api-keys',
+    component: () => import('../views/ApiKeysView.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

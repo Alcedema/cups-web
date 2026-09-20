@@ -169,6 +169,20 @@ docker exec cups driver-remove canon-ufr2
 - **CSRF 防护**：对所有非 GET/HEAD/OPTIONS 请求校验 `X-CSRF-Token`
 - **密码安全**：bcrypt 加密存储
 
+### API 密钥（[Issue #113](https://github.com/hanxi/cups-web/issues/113)）
+
+面向第三方系统（微信 / 飞书 / 钉钉机器人、家庭自动化脚本等）直接调用打印相关 API，不再依赖浏览器 cookie / CSRF。
+
+- **入口**：登录后顶部导航「密钥」，或直接访问 `/#/api-keys`。
+- **管理**：可设备注名、有效期（永不过期 / 7 / 30 / 90 / 365 天），支持删除。明文密钥仅在创建时返回一次，请立即保存。
+- **调用**：请求头带 `Authorization: Bearer <密钥>` 或 `X-API-Key: <密钥>`，无需再走登录/CSRF。密钥继承其归属用户的角色（`user` 不能访问管理接口）。
+- **限制**：`guest` 访客账号禁止签发或使用密钥；API 密钥自身不能用来创建或删除其他密钥（须在浏览器 UI 上操作）。
+
+```bash
+# 列出打印机
+curl -H "Authorization: Bearer cw_XXXXXXXX" https://your-host/api/printers
+```
+
 ## 🛠️ 技术栈
 
 - **后端**：Go 1.26 · Gorilla Mux · SQLite（`modernc.org/sqlite`，纯 Go 实现，无需 CGO）

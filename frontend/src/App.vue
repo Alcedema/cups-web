@@ -46,6 +46,16 @@
                 扫描
               </UButton>
               <UButton
+                v-if="canManageKeys"
+                :variant="route.path === '/api-keys' ? 'soft' : 'ghost'"
+                :color="route.path === '/api-keys' ? 'primary' : 'neutral'"
+                size="xs"
+                icon="i-lucide-key-round"
+                @click="router.push('/api-keys')"
+              >
+                密钥
+              </UButton>
+              <UButton
                 v-if="isAdmin"
                 :variant="route.path === '/admin' ? 'soft' : 'ghost'"
                 :color="route.path === '/admin' ? 'primary' : 'neutral'"
@@ -167,6 +177,9 @@ const showSponsorModal = ref(false)
 const appVersion = ref('')
 
 const isAdmin = computed(() => session.value?.role === 'admin')
+// 访客模式（Issue #55）签发的 guest 账号不允许管理 API 密钥（Issue #113），
+// 避免访客通过 UI 生成 key 后带出容器；页面本身有二次校验，这里只是隐入口。
+const canManageKeys = computed(() => session.value && session.value.username !== 'guest')
 
 // 移动端汉堡菜单项：导航项（仅 admin）与登出分成两组，组间自动加分隔线
 const menuItems = computed(() => {
@@ -175,6 +188,9 @@ const menuItems = computed(() => {
     nav.push({ label: '打印', icon: 'i-lucide-file-text', onSelect: () => router.push('/print') })
     nav.push({ label: '定时', icon: 'i-lucide-calendar-clock', onSelect: () => router.push('/scheduled') })
     nav.push({ label: '扫描', icon: 'i-lucide-scan-line', onSelect: () => router.push('/scan') })
+  }
+  if (canManageKeys.value) {
+    nav.push({ label: '密钥', icon: 'i-lucide-key-round', onSelect: () => router.push('/api-keys') })
   }
   if (isAdmin.value) {
     nav.push({ label: '管理', icon: 'i-lucide-settings', onSelect: () => router.push('/admin') })
