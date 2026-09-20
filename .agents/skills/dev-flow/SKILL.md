@@ -194,6 +194,28 @@ Ref #<number>      # 部分完成或仅相关
    git push origin main
    ```
 
+## 阶段七：回复 Issue
+
+仅当阶段一识别到 Issue 引用（有 `owner/repo/number`）且阶段六已成功推送时执行；自由描述任务跳过本阶段。
+
+1. 起草评论正文，通常包含：
+   - 引用 commit 短 SHA（`git rev-parse --short HEAD`）。
+   - 功能要点（本次改动做了什么、如何触发/使用）。
+   - 调用或使用示例（curl / 命令行 / UI 路径），字段名以最新代码为准，示例避免复制过时接口形态。
+   - 遗留跟进项与不在 scope 的部分，方便他人接手或提新 issue。
+2. 说明关闭策略：
+   - 提交信息用了 `Closes #<number>` / `Fixes #<number>` 且推送到默认分支时，GitHub 会自动关闭 Issue，评论只作补充说明。
+   - 用了 `Ref #<number>` 或未写 trailer 时提示用户是否需要额外 `gh issue close <number> --repo <owner>/<repo>`。
+3. 展示草稿后暂停，等待用户确认。用户拒绝或要求修改时留在本阶段迭代草稿，不擅自发布。
+4. 得到明确确认后执行（评论是公开的、不可撤销动作）：
+
+   ```bash
+   # 长文本走文件避免 shell 转义把正文吃掉
+   gh issue comment <number> --repo <owner>/<repo> -F <draft-file>
+   ```
+
+5. 返回评论链接与结果；若提交里没有关闭 trailer 且用户希望关闭，再单独确认后执行 `gh issue close`。
+
 ## 阶段控制
 
 - 用户说"继续""确认""通过"时，只推进到下一个尚未确认的阶段。
