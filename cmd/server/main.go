@@ -138,6 +138,9 @@ func main() {
 	// 依赖不稳定,即使补启 dbus-daemon 仍报 SANE code=9;这里改走 scanimage 子进程,
 	// 与宿主 Debian 标准 SANE 栈的验证一致。同一台扫描仪的并发由 SANE 后端处理。
 	protected.HandleFunc("/scan/devices", scanListDevicesHandler).Methods("GET")
+	// devices/probe:选中设备后前端异步做一次可用性探测(issue #111 复测反馈),
+	// 用来提示 hpaio 之类打不开的后端。走 query 避免 SANE URI 里的 ?/&/ 撞路由。
+	protected.HandleFunc("/scan/devices/probe", scanProbeDeviceHandler).Methods("GET")
 	protected.HandleFunc("/scan/options", scanListOptionsHandler).Methods("GET")
 	protected.HandleFunc("/scan/jobs", scanCreateJobHandler).Methods("POST")
 	// jobId 是 randomToken() 生成的不透明大写 base32 串,与 driver-job id 同样只放字母数字。

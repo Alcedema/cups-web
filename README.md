@@ -60,8 +60,11 @@
 - **可选参数**：模式（Color / Gray / Lineart）、分辨率（75–600 dpi）、来源（Flatbed / ADF，按设备实际能力显示）
 - **异步任务 + 实时日志**：提交后立即返回 `jobId`，页面每 1.5 秒轮询进度并展示 `scanimage` / `gs` 的实时输出；硬超时 5 分钟
 - **历史记录持久化**：扫描件默认存到 `SCAN_DIR`（`docker-compose.yml` 里挂到 `./.scans:/scans`），元数据落 `scan_records` 表，普通用户只看得到自己的记录，管理员可看全站
+- **设备可用性探测**：`scanimage -L` 会同时列出 `hpaio:` 与 `hpljm1005:` / `escl:` 等多个后端，但 `hpaio:` 在部分 HP 一体机（如 M1005）上打开就报 SANE `Error during device I/O`。选中设备后前端会异步调 `/api/scan/devices/probe` 探测一次；打不开时给出红字提示，请换 `hpljm1005:` / `escl:` 等零配置后端再试
 
 > ⚠️ **不用 hplip 自带的 `hp-scan`**：容器里 HPLIP daemon 与 dbus 依赖不稳定，即便补启 `dbus-daemon --system --fork` 仍报 `SANE: Error during device I/O (code=9)`。改走标准 SANE 栈的 `scanimage` 子进程，同宿主同硬件（如 HP LaserJet M1005 MFP）已验证可用。
+>
+> 📌 **当前镜像标签**：扫描功能与设备探测已合并到 master 分支，但 Docker Hub 上的 `hanxi/cups-web:master` 尚未重建。当前请拉 `hanxi/cups-web:dev`（每次 master push 自动更新）体验，或从源码 `make all` 自行构建；等 `master`/正式版镜像更新后再切回 `latest`。
 
 ### 打印机驱动
 

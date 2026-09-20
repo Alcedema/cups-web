@@ -21,7 +21,7 @@
       variant="soft"
       icon="i-lucide-info"
       title="使用说明"
-      description="AIO 镜像自带 scanimage + libsane-hpaio。首次连接扫描仪后请点「刷新设备」。PDF 会先扫成 PNG,再用 Ghostscript 合成。"
+      description="AIO 镜像自带 scanimage 与多种 SANE 后端。zeroconf 类零配置后端(如 hpljm1005: / escl:)通常可直接工作;同一台设备若同时列出 hpaio: 与 hpljm1005:,优先选后者。选中设备后系统会做一次快速可用性探测,若打开失败请换其它后端再试。PDF 会先扫成 PNG,再用 Ghostscript 合成。"
     />
 
     <UCard>
@@ -49,6 +49,15 @@
               未检测到设备。请确认扫描仪已开机、USB 已连接,或宿主机已挂 --device=/dev/bus/usb。
             </span>
             <span v-else-if="loadingDevices">检测中…</span>
+            <span v-else-if="currentProbe?.state === 'probing'" class="text-muted">
+              正在探测该后端是否可打开…
+            </span>
+            <span v-else-if="currentProbe?.state === 'healthy'" class="text-success">
+              ✓ 该后端可打开
+            </span>
+            <span v-else-if="currentProbe?.state === 'unhealthy'" class="text-error">
+              该后端无法打开{{ currentProbe.detail ? ':' + currentProbe.detail : '' }}。请换其它后端(如 hpljm1005: / escl:)再试。
+            </span>
           </template>
         </UFormField>
 
@@ -190,6 +199,9 @@ const toast = useToast()
 
 const devices = ref([])
 const loadingDevices = ref(false)
+// deviceProbes:每台设备的探测状态缓存,key 是设备 URI。
+// state: 'probing' | 'healthy' | 'unhealthy'。同一台设备重复选中时命中缓存不再重复探。
+const deviceProbes = ref({})
 const records = ref([])
 const loadingRecords = ref(false)
 const currentJob = ref(null)
@@ -232,6 +244,12 @@ const deviceItems = computed(() =>
     label: d.model ? `${d.vendor || ''} ${d.model}`.trim() + ` — ${d.name}` : d.name
   }))
 )
+
+const currentProbe = computed(() => {
+  const dev = form.value.device
+  if (!dev) return null
+  return deviceProbes.value[dev] || null
+})
 
 function formatSize(bytes) {
   if (!bytes) return ''
@@ -279,6 +297,9 @@ function jobStatusColor(s) {
 
 async function loadDevices() {
   loadingDevices.value = true
+  // 刷新设备列表时同步清掉旧的探测缓存——用户刷新时通常是"设备接线/开关刚变过",
+  // 老状态可能已经不准了。
+  deviceProbes.value = {}
   try {
     const resp = await apiFetch('/api/scan/devices', {}, () => emit('logout'))
     if (!resp.ok) throw new Error(await readError(resp))
@@ -287,11 +308,46 @@ async function loadDevices() {
     if (devices.value.length && !form.value.device) {
       form.value.device = devices.value[0].name
       await loadOptions(form.value.device)
+      probeDevice(form.value.device)
     }
   } catch (e) {
     toast.add({ title: '设备加载失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     loadingDevices.value = false
+  }
+}
+
+async function probeDevice(device) {
+  if (!device) return
+  // 命中缓存:已 healthy/unhealthy 的设备不重复探。用户可以刷新设备列表来清空。
+  const cached = deviceProbes.value[device]
+  if (cached && cached.state !== 'probing') return
+  deviceProbes.value = { ...deviceProbes.value, [device]: { state: 'probing', detail: '' } }
+  try {
+    const resp = await apiFetch(
+      `/api/scan/devices/probe?device=${encodeURIComponent(device)}`,
+      {},
+      () => emit('logout')
+    )
+    if (!resp.ok) {
+      // 接口级失败(设备已消失、scanimage 异常等):当作 unhealthy 提示,不弹 toast。
+      const detail = await readError(resp)
+      deviceProbes.value = { ...deviceProbes.value, [device]: { state: 'unhealthy', detail } }
+      return
+    }
+    const data = await resp.json()
+    deviceProbes.value = {
+      ...deviceProbes.value,
+      [device]: {
+        state: data.healthy ? 'healthy' : 'unhealthy',
+        detail: data.detail || ''
+      }
+    }
+  } catch (e) {
+    deviceProbes.value = {
+      ...deviceProbes.value,
+      [device]: { state: 'unhealthy', detail: e.message || '网络异常' }
+    }
   }
 }
 
@@ -432,8 +488,11 @@ async function confirmDelete(rec) {
   }
 }
 
-// 设备切换时刷新参数(可能改变可用的 source)
-watch(() => form.value.device, (dev) => loadOptions(dev))
+// 设备切换时刷新参数(可能改变可用的 source),并异步探一次可用性(issue #111 复测反馈)
+watch(() => form.value.device, (dev) => {
+  loadOptions(dev)
+  probeDevice(dev)
+})
 
 onMounted(async () => {
   await Promise.all([loadDevices(), loadRecords()])

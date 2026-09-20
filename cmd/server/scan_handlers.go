@@ -100,6 +100,47 @@ func scanDeviceExists(devices []ScanDevice, name string) bool {
 }
 
 // ------------------------------------------------------------------
+// GET /api/scan/devices/probe?device=<name>  —— 探测某台设备是否真的能打开
+// ------------------------------------------------------------------
+//
+// 背景(issue #111 复测反馈):hpaio: 后端在部分 HP 设备上打开就会报 SANE
+// Error during device I/O,但 `scanimage -L` 仍会把它列出来,前端下拉里
+// 有多台设备时用户容易选错。这里提供一个懒探测接口:前端在用户选中某
+// 台设备后异步调用,给出健康/不健康提示,不阻塞设备列表本身。
+
+func scanProbeDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	device := strings.TrimSpace(r.URL.Query().Get("device"))
+	if device == "" {
+		writeJSONError(w, http.StatusBadRequest, "缺少 device 参数")
+		return
+	}
+	// 先跑一次 -L 校验 device 存在,防止把任意字符串塞给驱动。
+	verifyCtx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	devices, _, err := listScanDevices(verifyCtx)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("列出扫描设备失败: %v", err))
+		return
+	}
+	if !scanDeviceExists(devices, device) {
+		writeJSONError(w, http.StatusNotFound, "指定的扫描设备不存在,请刷新设备列表")
+		return
+	}
+	// 探测本身允许失败——命令非零退出表示后端打不开(hpaio 典型场景),
+	// 只把 healthy=false 返回给前端;仅当 scanimage 二进制或环境异常时才 500。
+	healthy, detail, err := probeScanDevice(r.Context(), device)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("探测失败: %v", err))
+		return
+	}
+	writeJSON(w, map[string]any{
+		"device":  device,
+		"healthy": healthy,
+		"detail":  detail,
+	})
+}
+
+// ------------------------------------------------------------------
 // POST /api/scan/jobs  —— 提交一次扫描任务(异步)
 // ------------------------------------------------------------------
 

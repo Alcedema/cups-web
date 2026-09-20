@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ScanDevice 是 `scanimage -L` 解析出的一台设备(issue #111)。
@@ -254,6 +255,79 @@ func indexOfSuffixLetters(s string) int {
 		break
 	}
 	return i
+}
+
+// probeScanDevice 用 `scanimage -A -d <device>` 做一次轻量可用性探测(issue #111 复测反馈)。
+//
+// hpaio: 后端在部分 HP 一体机(如 M1005)上打开会直接报 SANE Error during device I/O,
+// 但 `scanimage -L` 仍会把它列出来,前端下拉里出现多个设备时用户容易误选到不可用条目。
+// 这里选 `-A` 而不是真正扫描:它会执行 SANE sane_open,不启动扫描头,能捕获 open 失败,
+// 又比一次扫描便宜得多(通常 1~3s 内返回)。
+//
+// 返回:
+//   - healthy=true, detail="": 探测通过
+//   - healthy=false, detail=<摘要>: 命令非零退出或超时,detail 里带 stderr 首行方便排查
+//   - err != nil: scanimage 二进制本身有问题(比如没装)等接口级异常,handler 应报 500
+func probeScanDevice(ctx context.Context, device string) (bool, string, error) {
+	probeCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(probeCtx, "scanimage", "-A", "-d", device)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		return true, "", nil
+	}
+	// 命令找不到 / 无法启动:归为 err(handler 报 500),避免每次探测都误报 unhealthy。
+	if _, ok := err.(*exec.Error); ok {
+		return false, "", err
+	}
+	// exit != 0:典型不可用,提取 stderr/stdout 首行作为 detail,截断避免爆量。
+	detail := summarizeProbeOutput(string(out), err)
+	if probeCtx.Err() == context.DeadlineExceeded {
+		if detail == "" {
+			detail = "探测超时(>12s)"
+		} else {
+			detail = "探测超时: " + detail
+		}
+	}
+	return false, detail, nil
+}
+
+// summarizeProbeOutput 把 scanimage -A 的 CombinedOutput 摘出关键报错行,便于前端显示。
+// 优先返回包含 "error"/"fail"/"invalid"/"unable" 的行,否则退回首行非空文本;
+// 长度截断到 240 字符防止 UI 被塞爆。
+func summarizeProbeOutput(raw string, err error) string {
+	lines := strings.Split(raw, "\n")
+	var firstNonEmpty string
+	for _, line := range lines {
+		s := strings.TrimSpace(line)
+		if s == "" {
+			continue
+		}
+		if firstNonEmpty == "" {
+			firstNonEmpty = s
+		}
+		lower := strings.ToLower(s)
+		if strings.Contains(lower, "error") || strings.Contains(lower, "fail") ||
+			strings.Contains(lower, "invalid") || strings.Contains(lower, "unable") ||
+			strings.Contains(lower, "not a scanner") {
+			return truncateProbeDetail(s)
+		}
+	}
+	if firstNonEmpty != "" {
+		return truncateProbeDetail(firstNonEmpty)
+	}
+	if err != nil {
+		return truncateProbeDetail(err.Error())
+	}
+	return "未知错误"
+}
+
+func truncateProbeDetail(s string) string {
+	const max = 240
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "…"
 }
 
 // parseResolution 只是薄封装,给 handler 用来把用户传的分辨率字符串转 int
