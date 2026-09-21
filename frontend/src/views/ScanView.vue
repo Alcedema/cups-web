@@ -11,7 +11,7 @@
           size="xs"
           icon="i-lucide-refresh-cw"
           :loading="loadingDevices"
-          @click="loadDevices"
+          @click="loadDevices(true)"
         >刷新设备</UButton>
       </div>
     </div>
@@ -295,13 +295,16 @@ function jobStatusColor(s) {
   }[s] || 'text-muted'
 }
 
-async function loadDevices() {
+async function loadDevices(force = false) {
   loadingDevices.value = true
-  // 刷新设备列表时同步清掉旧的探测缓存——用户刷新时通常是"设备接线/开关刚变过",
-  // 老状态可能已经不准了。
-  deviceProbes.value = {}
+  // force=true 时同步清掉旧的探测缓存——用户手动刷新通常是"设备接线/开关刚变过",
+  // 老状态可能已经不准了。挂载时的默认加载走服务端缓存,不清 probe。
+  if (force) deviceProbes.value = {}
   try {
-    const resp = await apiFetch('/api/scan/devices', {}, () => emit('logout'))
+    // 挂载时默认走服务端 TTL 缓存(issue #111 复测反馈:每次真调 scanimage -L 要 ~17s);
+    // 点【刷新设备】按钮时才 force=1 打穿缓存重新发现。
+    const url = force ? '/api/scan/devices?force=1' : '/api/scan/devices'
+    const resp = await apiFetch(url, {}, () => emit('logout'))
     if (!resp.ok) throw new Error(await readError(resp))
     const data = await resp.json()
     devices.value = data.devices || []

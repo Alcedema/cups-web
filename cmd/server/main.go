@@ -199,6 +199,9 @@ func main() {
 
 	startMaintenance(appStore, uploadDir)
 	startScheduler(appStore, uploadDir)
+	// 扫描设备发现缓存的启动预热(issue #111 复测反馈):避免第一位打开扫描页
+	// 的用户等 ~17s。缓存被 SCAN_DEVICES_CACHE_TTL<=0 关闭时自动跳过。
+	startScanPrewarm()
 
 	fmt.Println("listening on", addr)
 	log.Fatal(srv.ListenAndServe())

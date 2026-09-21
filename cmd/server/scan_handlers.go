@@ -47,9 +47,12 @@ var supportedScanModes = map[string]bool{
 // ------------------------------------------------------------------
 
 func scanListDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	devices, raw, err := listScanDevices(ctx)
+	// force=1 时打穿缓存重新执行 scanimage -L(前端【刷新设备】使用);
+	// 未指定时命中 TTL 缓存,避免每次进扫描页都等 ~17s(issue #111 复测反馈)。
+	force := r.URL.Query().Get("force") == "1"
+	devices, raw, err := scanDeviceCacheGet(ctx, force)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("列出扫描设备失败: %v\n%s", err, raw))
 		return
@@ -71,8 +74,11 @@ func scanListOptionsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	// 参数抓取前先跑一次 -L 校验 device 存在,避免把任意字符串塞给驱动。
-	devices, _, err := listScanDevices(ctx)
+	// 参数抓取前先校验 device 存在,避免把任意字符串塞给驱动。
+	// 走缓存:options 与 devices 都由前端在同一次进页面时发起,命中已刷新的列表即可,
+	// 不需要再等一次 scanimage -L(issue #111 复测反馈)。缓存里存在但物理已拔时,
+	// 下面 scanimage -A 仍会失败,由 handler 报错。
+	devices, _, err := scanDeviceCacheGet(ctx, false)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("列出扫描设备失败: %v", err))
 		return
@@ -114,10 +120,11 @@ func scanProbeDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "缺少 device 参数")
 		return
 	}
-	// 先跑一次 -L 校验 device 存在,防止把任意字符串塞给驱动。
+	// 校验 device 存在,防止把任意字符串塞给驱动。走缓存:探测通常紧跟设备列表调用,
+	// 命中热数据即可,不再多等一次 scanimage -L(issue #111 复测反馈)。
 	verifyCtx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	devices, _, err := listScanDevices(verifyCtx)
+	devices, _, err := scanDeviceCacheGet(verifyCtx, false)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("列出扫描设备失败: %v", err))
 		return
@@ -192,10 +199,11 @@ func scanCreateJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	source := strings.TrimSpace(req.Source) // 允许空;空时不给 scanimage 传 --source
 
-	// 校验 device 是否真的存在(顺手也验证 scanimage 可以运行)。
+	// 校验 device 是否真的存在。走缓存:提交扫描时通常紧跟一次页面加载,命中热数据即可;
+	// 缓存里存在但物理已拔时,scanimage 子进程会立刻报错,不影响正确性(issue #111 复测反馈)。
 	verifyCtx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	devices, _, err := listScanDevices(verifyCtx)
+	devices, _, err := scanDeviceCacheGet(verifyCtx, false)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("列出扫描设备失败: %v", err))
 		return
