@@ -1,14 +1,16 @@
+
+import { t, formatLocale, formatNumber } from '../i18n.js'
 export function formatFileSize(bytes) {
   if (!bytes) return '0 B'
   if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  if (bytes < 1024 * 1024) return formatNumber(bytes / 1024, { maximumFractionDigits: 1 }) + ' KB'
+  return formatNumber(bytes / (1024 * 1024), { maximumFractionDigits: 1 }) + ' MB'
 }
 
 export function formatTime(iso) {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    return new Date(iso).toLocaleString(formatLocale(), { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
   } catch { return iso }
 }
 
@@ -40,14 +42,14 @@ export function printerDescription(printer) {
 }
 
 export function formatDurationSeconds(totalSeconds) {
-  if (!totalSeconds || totalSeconds < 0) return '未知'
+  if (!totalSeconds || totalSeconds < 0) return t('ui.m4d8c1c5b42')
   const d = Math.floor(totalSeconds / 86400)
   const h = Math.floor((totalSeconds % 86400) / 3600)
   const m = Math.floor((totalSeconds % 3600) / 60)
-  if (d > 0) return `${d}天${h}小时`
-  if (h > 0) return `${h}小时${m}分钟`
-  if (m > 0) return `${m}分钟`
-  return `${totalSeconds}秒`
+  if (d > 0) return t('ui.m625fcdb686', { p0: (d), p1: (h) })
+  if (h > 0) return t('ui.m6b4da5dfa4', { p0: (h), p1: (m) })
+  if (m > 0) return t('ui.me235256e97', { p0: (m) })
+  return t('ui.me9dc5dd213', { p0: (totalSeconds) })
 }
 
 export function statusColor(status) {
@@ -56,7 +58,7 @@ export function statusColor(status) {
 }
 
 export function statusText(status) {
-  const map = { queued: '排队中', printed: '已打印', failed: '失败', cancelled: '已取消' }
+  const map = { queued: t('ui.md6f766f2ad'), printed: t('ui.m59808ada86'), failed: t('ui.m28384d7afd'), cancelled: t('ui.ma37778f17c') }
   return map[status] || status
 }
 
@@ -66,8 +68,8 @@ export function printerStateColor(state) {
 }
 
 export function printerStateText(state) {
-  const map = { idle: '空闲', processing: '打印中', stopped: '已停止' }
-  return map[state] || state || '未知'
+  const map = { idle: t('ui.mdae661d17c'), processing: t('ui.m2978542fbb'), stopped: t('ui.mf006455e3b') }
+  return map[state] || state || t('ui.m4d8c1c5b42')
 }
 
 export function markerLevelColor(level) {

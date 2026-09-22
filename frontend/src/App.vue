@@ -1,12 +1,12 @@
 <template>
-  <UApp>
+  <UApp :locale="uiLocale">
     <div v-if="!sessionLoaded" class="flex items-center justify-center min-h-screen bg-default">
       <UIcon name="i-lucide-loader-circle" class="w-8 h-8 animate-spin text-primary" />
     </div>
     <div v-else class="grid grid-rows-[auto_1fr_auto] min-h-screen w-full bg-default">
       <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-default bg-default">
         <div class="flex items-center gap-3 min-w-0">
-          <h1 class="text-xl font-bold shrink-0">CUPS 打印</h1>
+          <h1 class="text-xl font-bold shrink-0">{{ t('ui.mc3cd485558') }}</h1>
           <span v-if="session" class="text-sm text-muted truncate">{{ session.username }}</span>
         </div>
         <div class="flex items-center gap-2">
@@ -25,7 +25,7 @@
                 icon="i-lucide-file-text"
                 @click="router.push('/print')"
               >
-                打印
+                {{ t('ui.md7bfe7b505') }}
               </UButton>
               <UButton
                 :variant="route.path === '/scheduled' ? 'soft' : 'ghost'"
@@ -34,7 +34,7 @@
                 icon="i-lucide-calendar-clock"
                 @click="router.push('/scheduled')"
               >
-                定时
+                {{ t('ui.m6a2b5eb8d4') }}
               </UButton>
               <UButton
                 :variant="route.path === '/scan' ? 'soft' : 'ghost'"
@@ -43,7 +43,7 @@
                 icon="i-lucide-scan-line"
                 @click="router.push('/scan')"
               >
-                扫描
+                {{ t('ui.mc2a291b64f') }}
               </UButton>
               <UButton
                 v-if="canManageKeys"
@@ -53,7 +53,7 @@
                 icon="i-lucide-key-round"
                 @click="router.push('/api-keys')"
               >
-                密钥
+                {{ t('ui.mf67bca8f42') }}
               </UButton>
               <UButton
                 v-if="isAdmin"
@@ -63,7 +63,7 @@
                 icon="i-lucide-settings"
                 @click="router.push('/admin')"
               >
-                管理
+                {{ t('ui.mbb6d995724') }}
               </UButton>
               <UButton
                 v-if="isAdmin"
@@ -73,9 +73,12 @@
                 icon="i-lucide-puzzle"
                 @click="router.push('/drivers')"
               >
-                驱动
+                {{ t('ui.m8d72392eda') }}
               </UButton>
             </div>
+            <UButton v-if="canManageKeys" variant="ghost" color="neutral" size="xs" icon="i-lucide-user-round" @click="router.push('/account')">
+              {{ t('account.title') }}
+            </UButton>
             <UButton
               v-if="session"
               variant="ghost"
@@ -84,7 +87,7 @@
               icon="i-lucide-log-out"
               @click="logout"
             >
-              登出
+              {{ t('ui.m057f31bc16') }}
             </UButton>
           </div>
           <!-- 移动端（<sm）：折叠为汉堡菜单，图标+文字，易点易读 -->
@@ -94,7 +97,7 @@
             :content="{ align: 'end' }"
             class="sm:hidden"
           >
-            <UButton variant="ghost" color="neutral" size="sm" icon="i-lucide-menu" square />
+            <UButton variant="ghost" color="neutral" size="sm" icon="i-lucide-menu" :aria-label="t('account.menu')" square />
           </UDropdownMenu>
         </div>
       </header>
@@ -103,7 +106,7 @@
       </div>
       <footer class="px-6 py-3 border-t border-default bg-default text-sm text-muted flex items-center justify-center gap-3 flex-wrap">
         <span>
-          Powered by
+          {{ t('account.powered_by') }}
           <a href="https://github.com/hanxi/cups-web" target="_blank" class="text-primary hover:underline">cups-web</a>
         </span>
         <span v-if="appVersion" class="text-default/40">·</span>
@@ -119,7 +122,7 @@
           @click="showSponsorModal = true"
         >
           <UIcon name="i-lucide-heart" class="w-4 h-4" />
-          <span>赞赏支持</span>
+          <span>{{ t('ui.mde55d5dfe5') }}</span>
         </button>
       </footer>
     </div>
@@ -129,19 +132,19 @@
         <div class="p-6 space-y-4">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-heart" class="w-5 h-5 text-primary" />
-            <h3 class="text-lg font-semibold">赞赏支持</h3>
+            <h3 class="text-lg font-semibold">{{ t('ui.mde55d5dfe5') }}</h3>
           </div>
           <p class="text-sm text-muted">
-            如果 cups-web 对你有帮助，欢迎通过以下方式支持作者持续维护 ❤️
+            {{ t('ui.m1e4e6b8282') }}
           </p>
           <div class="flex flex-col items-center gap-3 py-2">
             <img
               src="/sponsor.png"
-              alt="赞赏码"
+              :alt="t('ui.m5594539025')"
               class="w-60 h-60 object-contain rounded-lg border border-default bg-white"
               loading="lazy"
             />
-            <div class="text-sm text-muted">扫码请作者喝杯奶茶 ☕</div>
+            <div class="text-sm text-muted">{{ t('ui.m85cc4a59eb') }}</div>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center pt-2 border-t border-default">
             <a
@@ -151,9 +154,9 @@
               class="inline-flex items-center gap-1 text-primary hover:underline text-sm"
             >
               <UIcon name="i-lucide-external-link" class="w-4 h-4" />
-              爱发电主页
+              {{ t('ui.m3666dc570e') }}
             </a>
-            <UButton variant="ghost" @click="showSponsorModal = false">关闭</UButton>
+            <UButton variant="ghost" @click="showSponsorModal = false">{{ t('ui.m3fd47edce4') }}</UButton>
           </div>
         </div>
       </template>
@@ -162,6 +165,9 @@
 </template>
 
 <script setup>
+import { t } from './i18n.js'
+import { uiLocale, setLanguage, setServerLanguage } from './i18n.js'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { clearSessionCache, updateSessionCache } from './router'
@@ -185,18 +191,19 @@ const canManageKeys = computed(() => session.value && session.value.username !==
 const menuItems = computed(() => {
   const nav = []
   if (session.value) {
-    nav.push({ label: '打印', icon: 'i-lucide-file-text', onSelect: () => router.push('/print') })
-    nav.push({ label: '定时', icon: 'i-lucide-calendar-clock', onSelect: () => router.push('/scheduled') })
-    nav.push({ label: '扫描', icon: 'i-lucide-scan-line', onSelect: () => router.push('/scan') })
+    nav.push({ get label() { return t('ui.md7bfe7b505') }, icon: 'i-lucide-file-text', onSelect: () => router.push('/print') })
+    nav.push({ get label() { return t('ui.m6a2b5eb8d4') }, icon: 'i-lucide-calendar-clock', onSelect: () => router.push('/scheduled') })
+    nav.push({ get label() { return t('ui.mc2a291b64f') }, icon: 'i-lucide-scan-line', onSelect: () => router.push('/scan') })
   }
   if (canManageKeys.value) {
-    nav.push({ label: '密钥', icon: 'i-lucide-key-round', onSelect: () => router.push('/api-keys') })
+    nav.push({ label: t('account.title'), icon: 'i-lucide-user-round', onSelect: () => router.push('/account') })
+    nav.push({ get label() { return t('ui.mf67bca8f42') }, icon: 'i-lucide-key-round', onSelect: () => router.push('/api-keys') })
   }
   if (isAdmin.value) {
-    nav.push({ label: '管理', icon: 'i-lucide-settings', onSelect: () => router.push('/admin') })
-    nav.push({ label: '驱动', icon: 'i-lucide-puzzle', onSelect: () => router.push('/drivers') })
+    nav.push({ get label() { return t('ui.mbb6d995724') }, icon: 'i-lucide-settings', onSelect: () => router.push('/admin') })
+    nav.push({ get label() { return t('ui.m8d72392eda') }, icon: 'i-lucide-puzzle', onSelect: () => router.push('/drivers') })
   }
-  const account = [{ label: '登出', icon: 'i-lucide-log-out', onSelect: () => logout() }]
+  const account = [{ get label() { return t('ui.m057f31bc16') }, icon: 'i-lucide-log-out', onSelect: () => logout() }]
   return nav.length ? [nav, account] : [account]
 })
 
@@ -222,6 +229,7 @@ async function loadCustomCSS() {
     const resp = await fetch('/api/public-settings')
     if (!resp.ok) return
     const data = await resp.json()
+    setServerLanguage(data.defaultLanguage)
     if (data && typeof data.customCss === 'string') {
       applyCustomCSS(data.customCss)
     }
@@ -242,12 +250,16 @@ function applyCustomCSS(css) {
 
 async function loadSession() {
   try {
+    // /session also creates the shared guest session when guest mode is enabled.
     const resp = await fetch('/api/session', { credentials: 'include' })
     if (resp.ok) {
-      const data = await resp.json()
+      const profile = await fetch('/api/me', { credentials: 'include' })
+      if (!profile.ok) { onLogout(); return }
+      const data = await profile.json()
       session.value = data
       updateSessionCache(data)
-      router.push('/print')
+      setLanguage(data.effectiveLanguage)
+      if (route.path === '/' || route.path === '/login') router.push('/print')
     } else {
       session.value = null
       router.push('/login')
@@ -265,6 +277,7 @@ function onLogin() {
 
 function onLogout() {
   session.value = null
+  setLanguage('')
   clearSessionCache()
   router.push('/login')
 }
@@ -284,10 +297,10 @@ function detectOS() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   detectOS()
-  loadSession()
+  await loadCustomCSS()
+  await loadSession()
   loadVersion()
-  loadCustomCSS()
 })
 </script>

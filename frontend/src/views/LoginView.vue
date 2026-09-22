@@ -4,7 +4,7 @@
       <template #header>
         <h2 class="text-xl font-bold flex items-center gap-2">
           <UIcon name="i-lucide-user" class="w-5 h-5" />
-          登录
+          {{ t('ui.m1e2df9c307') }}
         </h2>
       </template>
       
@@ -19,10 +19,10 @@
       />
       
       <UForm @submit="login" :state="state" class="space-y-6">
-        <UFormField label="用户名" name="username" required>
+        <UFormField :label="t('ui.m1a3f0617d6')" name="username" required>
           <UInput v-model="state.username" icon="i-lucide-user" size="lg" class="w-full" />
         </UFormField>
-        <UFormField label="密码" name="password" required>
+        <UFormField :label="t('ui.ma621ab606d')" name="password" required>
           <UInput v-model="state.password" type="password" icon="i-lucide-lock" size="lg" class="w-full" />
         </UFormField>
         
@@ -35,7 +35,7 @@
             class="w-full"
             :loading="loading"
           >
-            登录
+            {{ t('ui.m1e2df9c307') }}
           </UButton>
         </div>
       </UForm>
@@ -44,6 +44,8 @@
 </template>
 
 <script setup>
+import { t } from '../i18n.js'
+
 import { reactive, ref } from 'vue'
 
 const state = reactive({
@@ -57,11 +59,11 @@ const emit = defineEmits(['login-success'])
 
 // 后端 /api/login 的错误串是英文短语，直接展示对终端用户不友好，在此本地化。
 const BACKEND_MESSAGES = {
-  'invalid credentials': '用户名或密码错误',
-  'missing credentials': '请输入用户名和密码',
-  'too many attempts, please try again later': '登录失败次数过多，请稍后再试（默认锁定 15 分钟）',
-  'login failed': '服务端处理登录时出错，请查看服务端日志',
-  'session error': '会话创建失败，请查看服务端日志'
+  'invalid credentials': t('ui.ma9a6a83a7d'),
+  'missing credentials': t('ui.m1793872ca1'),
+  'too many attempts, please try again later': t('ui.me584fd65a0'),
+  'login failed': t('ui.m29056d6d0f'),
+  'session error': t('ui.m299def6bcb')
 }
 
 // 把失败响应翻译成可诊断的中文提示。
@@ -92,19 +94,19 @@ async function describeFailure(resp) {
 
   const looksLikeHTML = raw.trimStart().startsWith('<')
   const detail = looksLikeHTML
-    ? '（服务端返回了 HTML 页面，通常来自反向代理或网关的错误页）'
+    ? t('ui.mf629084e44')
     : raw.trim().slice(0, 200)
 
   if (resp.status === 403) {
-    return `请求被拒绝（403）。若你通过反向代理访问，请确认它转发了真实域名（nginx：proxy_set_header Host $host; proxy_set_header X-Forwarded-Host $host;）。${detail}`
+    return t('ui.m0650ce58ee', { p0: (detail) })
   }
   if (resp.status === 404 || resp.status === 405) {
-    return `接口不可达（${resp.status}）：/api/login 没有到达 cups-web，请检查反向代理是否把 /api 转发到了正确的后端。${detail}`
+    return t('ui.mbc7730264a', { p0: (resp.status), p1: (detail) })
   }
   if (resp.status >= 500) {
-    return `服务端错误（${resp.status}），请查看服务端日志。${detail}`
+    return t('ui.m9657aed5be', { p0: (resp.status), p1: (detail) })
   }
-  return `登录失败（HTTP ${resp.status}）${detail ? '：' + detail : ''}`
+  return t('ui.maba149aa8a', { p0: (resp.status), p1: (detail ? '：' + detail : '') })
 }
 
 async function login() {
@@ -124,7 +126,7 @@ async function login() {
     emit('login-success')
   } catch (e) {
     // fetch 本身抛异常＝请求没能完成（网络不可达、TLS 失败、被浏览器策略阻断）。
-    error.value = `无法连接到服务端：${e.message}`
+    error.value = t('ui.m511a9ffe95', { p0: (e.message) })
   } finally {
     loading.value = false
   }

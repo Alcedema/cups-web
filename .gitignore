@@ -35,3 +35,5 @@ ofd-converter/target/
 .aone_copilot/
 
 
+
+__pycache__/

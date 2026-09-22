@@ -22,6 +22,7 @@ import (
 )
 
 func main() {
+	configureLanguage()
 	// 命令行参数优先级高于环境变量。
 	// 默认值留空以便区分"用户未指定"与"显式指定"，最终再回退到 :8080。
 	listenFlag := flag.String("addr", "", "监听地址，如 :8080 或 0.0.0.0:8080 (优先级高于 LISTEN_ADDR 环境变量)")
@@ -99,6 +100,8 @@ func main() {
 	protected.Use(middleware.RequireSession)
 	protected.Use(middleware.ValidateCSRF)
 	protected.HandleFunc("/me", MeHandler).Methods("GET")
+	protected.HandleFunc("/me/preferences", updatePreferencesHandler).Methods("PUT")
+	protected.HandleFunc("/me/password", changePasswordHandler).Methods("PUT")
 	protected.HandleFunc("/printers", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 

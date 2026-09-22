@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"cups-web/internal/messages"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -36,7 +37,8 @@ func writeJSONStatus(w http.ResponseWriter, status int, v interface{}) {
 }
 
 func writeJSONError(w http.ResponseWriter, status int, msg string) {
-	writeJSONStatus(w, status, map[string]string{"error": msg})
+	code, params := messages.Identify(msg)
+	writeJSONStatus(w, status, map[string]interface{}{"error": msg, "code": code, "params": params})
 }
 
 func randomToken() string {

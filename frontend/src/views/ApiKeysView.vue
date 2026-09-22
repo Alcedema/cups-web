@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <h1 class="text-lg font-bold flex items-center gap-2">
         <UIcon name="i-lucide-key-round" class="w-5 h-5 text-primary" />
-        API 密钥
+        {{ t('ui.m5f600b307b') }}
       </h1>
       <div class="flex items-center gap-2">
         <UButton
@@ -12,13 +12,13 @@
           icon="i-lucide-refresh-cw"
           :loading="loading"
           @click="loadKeys"
-        >刷新</UButton>
+        >{{ t('ui.maee8874341') }}</UButton>
         <UButton
           size="sm"
           color="primary"
           icon="i-lucide-plus"
           @click="openCreate"
-        >新建密钥</UButton>
+        >{{ t('ui.md9433725d6') }}</UButton>
       </div>
     </div>
 
@@ -26,17 +26,17 @@
       color="neutral"
       variant="soft"
       icon="i-lucide-info"
-      title="使用说明"
-      description="密钥以持有该密钥的用户身份调用 API，可用于第三方系统（如微信机器人）直接对接。请求头带上 Authorization: Bearer <密钥> 即可，无需再走登录/CSRF。密钥仅在创建时明文返回一次，请妥善保存。"
+      :title="t('ui.mcb4ba40bf8')"
+      :description="t('ui.m1c1f3c40af')"
     />
 
     <div v-if="loading" class="flex items-center justify-center py-10 text-muted gap-2">
       <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-      加载中…
+      {{ t('ui.m4927a53bcc') }}
     </div>
     <div v-else-if="!keys.length" class="text-center py-16 text-muted">
       <UIcon name="i-lucide-key-off" class="w-10 h-10 mx-auto mb-2 opacity-40" />
-      <div>还没有 API 密钥</div>
+      <div>{{ t('ui.m6c008626d4') }}</div>
     </div>
     <div v-else class="space-y-3">
       <UCard v-for="k in keys" :key="k.id" class="overflow-hidden">
@@ -53,17 +53,17 @@
                 variant="soft"
                 size="sm"
               >
-                {{ isExpired(k) ? '已过期' : `到期 ${formatDate(k.expiresAt)}` }}
+                {{ isExpired(k) ? t('ui.m2fe0e3339a') : t('ui.m49f72586d7', { p0: (formatDate(k.expiresAt)) }) }}
               </UBadge>
-              <UBadge v-else color="success" variant="soft" size="sm">永不过期</UBadge>
+              <UBadge v-else color="success" variant="soft" size="sm">{{ t('ui.m2c60316d5e') }}</UBadge>
             </div>
             <div class="text-xs text-muted space-y-0.5">
-              <div>创建于 {{ formatDate(k.createdAt) }}</div>
+              <div>{{ t('ui.mdc4d662d07') }} {{ formatDate(k.createdAt) }}</div>
               <div v-if="k.lastUsedAt">
-                最近使用 {{ formatDate(k.lastUsedAt) }}
-                <span v-if="k.lastUsedIp" class="ml-1 text-default/50">from {{ k.lastUsedIp }}</span>
+                {{ t('ui.m39a9046f9c') }} {{ formatDate(k.lastUsedAt) }}
+                <span v-if="k.lastUsedIp" class="ml-1 text-default/50">{{ t('extra.from_address', { address: k.lastUsedIp }) }}</span>
               </div>
-              <div v-else class="text-default/50">尚未使用</div>
+              <div v-else class="text-default/50">{{ t('ui.m9bd11dda28') }}</div>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -73,7 +73,7 @@
               color="error"
               icon="i-lucide-trash-2"
               @click="confirmDelete(k)"
-            >删除</UButton>
+            >{{ t('ui.m2f9daa8289') }}</UButton>
           </div>
         </div>
       </UCard>
@@ -85,32 +85,32 @@
         <div class="p-6 space-y-4">
           <h3 class="text-lg font-semibold flex items-center gap-2">
             <UIcon name="i-lucide-key-round" class="w-5 h-5 text-primary" />
-            新建 API 密钥
+            {{ t('ui.m6a5c7ab7cf') }}
           </h3>
           <div class="space-y-3">
             <div>
-              <label class="block text-sm font-medium mb-1">备注名</label>
-              <UInput v-model="createForm.name" placeholder="例如 微信机器人 / 家庭打印脚本" maxlength="64" />
+              <label class="block text-sm font-medium mb-1">{{ t('ui.m36647d5ec6') }}</label>
+              <UInput v-model="createForm.name" :placeholder="t('ui.m7a862a325a')" maxlength="64" />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1">有效期</label>
+              <label class="block text-sm font-medium mb-1">{{ t('ui.m9c2a28e8f9') }}</label>
               <USelect
                 v-model="createForm.expiresInDays"
                 :items="expiryOptions"
                 value-key="value"
                 label-key="label"
               />
-              <p class="text-xs text-muted mt-1">到期后密钥自动失效；如需长期使用可选"永不过期"，泄露时手动删除即可。</p>
+              <p class="text-xs text-muted mt-1">{{ t('ui.m8c9bd6488c') }}</p>
             </div>
           </div>
           <div class="flex justify-end gap-2 pt-2">
-            <UButton variant="ghost" @click="showCreate = false">取消</UButton>
+            <UButton variant="ghost" @click="showCreate = false">{{ t('ui.m2cd0f3be87') }}</UButton>
             <UButton
               color="primary"
               :loading="creating"
               :disabled="!createForm.name.trim() || creating"
               @click="submitCreate"
-            >创建</UButton>
+            >{{ t('ui.mcde2cd071d') }}</UButton>
           </div>
         </div>
       </template>
@@ -122,10 +122,10 @@
         <div class="p-6 space-y-4">
           <h3 class="text-lg font-semibold flex items-center gap-2 text-warning">
             <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-            密钥已生成，仅此一次可见
+            {{ t('ui.m1429438e6c') }}
           </h3>
           <p class="text-sm text-muted">
-            请立即复制并妥善保存。关闭本对话框后将无法再查看完整密钥；如果遗失，请删除后重新创建。
+            {{ t('ui.m256cc401ee') }}
           </p>
           <div class="p-3 rounded bg-elevated/60 border border-default">
             <div class="flex items-center gap-2">
@@ -135,16 +135,16 @@
                 variant="outline"
                 icon="i-lucide-copy"
                 @click="copyKey"
-              >复制</UButton>
+              >{{ t('ui.m63d90d9773') }}</UButton>
             </div>
           </div>
           <div class="text-xs text-muted space-y-1">
-            <div>调用示例：</div>
+            <div>{{ t('ui.md997539070') }}</div>
             <pre class="p-2 rounded bg-elevated/60 border border-default overflow-x-auto"><code>curl -H "Authorization: Bearer {{ revealedKey }}" \
      {{ origin }}/api/printers</code></pre>
           </div>
           <div class="flex justify-end">
-            <UButton color="primary" @click="closeReveal">我已保存</UButton>
+            <UButton color="primary" @click="closeReveal">{{ t('ui.m0e1df87d77') }}</UButton>
           </div>
         </div>
       </template>
@@ -153,12 +153,12 @@
     <UModal v-model:open="showDelete">
       <template #content>
         <div class="p-6 space-y-4">
-          <h3 class="text-lg font-semibold">确认删除</h3>
-          <p>确定要删除密钥 <strong>{{ pendingDelete?.name }}</strong>（{{ pendingDelete?.prefix }}）吗？</p>
-          <p class="text-sm text-muted">删除后使用该密钥的请求将立即被拒绝，操作不可撤销。</p>
+          <h3 class="text-lg font-semibold">{{ t('ui.ma3ea3c17b4') }}</h3>
+          <p>{{ t('ui.md1b77c7c5a') }} <strong>{{ pendingDelete?.name }}</strong>（{{ pendingDelete?.prefix }}{{ t('ui.md8671711e8') }}</p>
+          <p class="text-sm text-muted">{{ t('ui.meeef9685a2') }}</p>
           <div class="flex justify-end gap-2">
-            <UButton variant="ghost" @click="showDelete = false">取消</UButton>
-            <UButton color="error" :loading="deleting" @click="executeDelete">确认删除</UButton>
+            <UButton variant="ghost" @click="showDelete = false">{{ t('ui.m2cd0f3be87') }}</UButton>
+            <UButton color="error" :loading="deleting" @click="executeDelete">{{ t('ui.ma3ea3c17b4') }}</UButton>
           </div>
         </div>
       </template>
@@ -167,6 +167,8 @@
 </template>
 
 <script setup>
+import { t, formatLocale, formatNumber } from '../i18n.js'
+
 import { ref, computed, onMounted } from 'vue'
 import { apiFetch, readError } from '../utils/api'
 
@@ -187,11 +189,11 @@ const pendingDelete = ref(null)
 const origin = computed(() => (typeof window !== 'undefined' ? window.location.origin : ''))
 
 const expiryOptions = [
-  { label: '永不过期', value: 0 },
-  { label: '7 天', value: 7 },
-  { label: '30 天', value: 30 },
-  { label: '90 天', value: 90 },
-  { label: '一年', value: 365 }
+  { get label() { return t('ui.m2c60316d5e') }, value: 0 },
+  { get label() { return t('ui.m38eefacbb3') }, value: 7 },
+  { get label() { return t('ui.m84ad2952a3') }, value: 30 },
+  { get label() { return t('ui.mcb82f41919') }, value: 90 },
+  { get label() { return t('ui.m3226061bb8') }, value: 365 }
 ]
 
 function formatDate(v) {
@@ -199,7 +201,7 @@ function formatDate(v) {
   try {
     const d = new Date(v)
     if (Number.isNaN(d.getTime())) return v
-    return d.toLocaleString()
+    return d.toLocaleString(formatLocale())
   } catch {
     return v
   }
@@ -218,7 +220,7 @@ async function loadKeys() {
     const resp = await apiFetch('/api/api-keys', {}, () => emit('logout'))
     if (!resp.ok) {
       const msg = await readError(resp)
-      toast.add({ title: '加载失败', description: msg, color: 'error', icon: 'i-lucide-x-circle' })
+      toast.add({ title: t('ui.md1d044826a'), description: msg, color: 'error', icon: 'i-lucide-x-circle' })
       return
     }
     keys.value = await resp.json()
@@ -246,7 +248,7 @@ async function submitCreate() {
     }, () => emit('logout'))
     if (!resp.ok) {
       const msg = await readError(resp)
-      toast.add({ title: '创建失败', description: msg, color: 'error', icon: 'i-lucide-x-circle' })
+      toast.add({ title: t('ui.m7e6a71efbf'), description: msg, color: 'error', icon: 'i-lucide-x-circle' })
       return
     }
     const data = await resp.json()
@@ -262,9 +264,9 @@ async function submitCreate() {
 async function copyKey() {
   try {
     await navigator.clipboard.writeText(revealedKey.value)
-    toast.add({ title: '已复制', color: 'success', icon: 'i-lucide-check-circle' })
+    toast.add({ title: t('ui.m8f6f8d979c'), color: 'success', icon: 'i-lucide-check-circle' })
   } catch {
-    toast.add({ title: '复制失败', description: '请手动选择并复制', color: 'warning', icon: 'i-lucide-alert-triangle' })
+    toast.add({ title: t('ui.m753d8bb0da'), get description() { return t('ui.m06d95da71f') }, color: 'warning', icon: 'i-lucide-alert-triangle' })
   }
 }
 
@@ -286,10 +288,10 @@ async function executeDelete() {
     const resp = await apiFetch(`/api/api-keys/${k.id}`, { method: 'DELETE' }, () => emit('logout'))
     if (!resp.ok) {
       const msg = await readError(resp)
-      toast.add({ title: '删除失败', description: msg, color: 'error', icon: 'i-lucide-x-circle' })
+      toast.add({ title: t('ui.mc228558cf2'), description: msg, color: 'error', icon: 'i-lucide-x-circle' })
       return
     }
-    toast.add({ title: '删除成功', color: 'success', icon: 'i-lucide-check-circle' })
+    toast.add({ title: t('ui.m5223f91b96'), color: 'success', icon: 'i-lucide-check-circle' })
     await loadKeys()
   } finally {
     deleting.value = false

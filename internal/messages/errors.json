@@ -1,0 +1,1337 @@
+[
+  {
+    "code": "api.m72ac229bac",
+    "pattern": "^上传的 \\.deb 包已归档，容器重启时会自动重新安装；若某个包始终装不上，可在宿主的 \\./\\.drivers/custom-deb/packages/ 下删除它。$",
+    "source": "上传的 .deb 包已归档，容器重启时会自动重新安装；若某个包始终装不上，可在宿主的 ./.drivers/custom-deb/packages/ 下删除它。"
+  },
+  {
+    "code": "api.m70ebf59d03",
+    "pattern": "^未能为该打印机匹配到驱动。请在候选列表中手动选择，或确认建立 raw 队列（无驱动，将无法选择纸盒/双面，多数打印机会打出乱码）$",
+    "source": "未能为该打印机匹配到驱动。请在候选列表中手动选择，或确认建立 raw 队列（无驱动，将无法选择纸盒/双面，多数打印机会打出乱码）"
+  },
+  {
+    "code": "api.m4c0d1b51a0",
+    "pattern": "^服务器未安装 LibreOffice，无法转换 Office 文档。请联系管理员安装 LibreOffice。$",
+    "source": "服务器未安装 LibreOffice，无法转换 Office 文档。请联系管理员安装 LibreOffice。"
+  },
+  {
+    "code": "api.m8b70d371b0",
+    "pattern": "^id card mode requires exactly 2 files \\(front and back\\)$",
+    "source": "id card mode requires exactly 2 files (front and back)"
+  },
+  {
+    "code": "api.m300a94014e",
+    "pattern": "^当前 CUPS 不支持 IPP Everywhere（lpinfo -m 中无 everywhere 条目）$",
+    "source": "当前 CUPS 不支持 IPP Everywhere（lpinfo -m 中无 everywhere 条目）"
+  },
+  {
+    "code": "api.ma60eccab02",
+    "pattern": "^ghostscript not found, cannot render PDF to images$",
+    "source": "ghostscript not found, cannot render PDF to images"
+  },
+  {
+    "code": "api.m3f82da621d",
+    "pattern": "^gs pdfwrite\\(([\\s\\S]*?)\\) succeeded but has font errors: ([\\s\\S]*?)$",
+    "source": "gs pdfwrite(%s) succeeded but has font errors: %s"
+  },
+  {
+    "code": "api.mf8c4c5823a",
+    "pattern": "^original file not found, may have been cleaned up$",
+    "source": "original file not found, may have been cleaned up"
+  },
+  {
+    "code": "api.m00dbe87bf7",
+    "pattern": "^Canon imageCLASS / i-SENSYS / imageRUNNER 系列激光打印机$",
+    "source": "Canon imageCLASS / i-SENSYS / imageRUNNER 系列激光打印机"
+  },
+  {
+    "code": "api.mfa14077abf",
+    "pattern": "^countPDFPagesWithFallback: normalize failed: ([\\s\\S]*?)$",
+    "source": "countPDFPagesWithFallback: normalize failed: %v"
+  },
+  {
+    "code": "api.m2d38af1dc8",
+    "pattern": "^HP LaserJet 1000/1005/1018/P1005/P1006/P1505 固件$",
+    "source": "HP LaserJet 1000/1005/1018/P1005/P1006/P1505 固件"
+  },
+  {
+    "code": "api.m6260da9fca",
+    "pattern": "^Epson ET-18100, L8050, L8160, WF-7840 等新款喷墨打印机$",
+    "source": "Epson ET-18100, L8050, L8160, WF-7840 等新款喷墨打印机"
+  },
+  {
+    "code": "api.me5d03ace62",
+    "pattern": "^invalid PPD file \\(missing \\*PPD-Adobe header\\)$",
+    "source": "invalid PPD file (missing *PPD-Adobe header)"
+  },
+  {
+    "code": "api.m31230a51b4",
+    "pattern": "^dpkg -i 失败 \\(([\\s\\S]*?)\\)，apt-get -f install 也失败 \\(([\\s\\S]*?)\\)$",
+    "source": "dpkg -i 失败 (%v)，apt-get -f install 也失败 (%v)"
+  },
+  {
+    "code": "api.m59d6731cf3",
+    "pattern": "^该 \\.deb 安装成功但归档失败，容器重启后需要重新上传安装（且列表中不会显示该包）。$",
+    "source": "该 .deb 安装成功但归档失败，容器重启后需要重新上传安装（且列表中不会显示该包）。"
+  },
+  {
+    "code": "api.m88e0cafcc7",
+    "pattern": "^too many attempts, please try again later$",
+    "source": "too many attempts, please try again later"
+  },
+  {
+    "code": "api.mea08ba652d",
+    "pattern": "^gs pdfwrite\\(([\\s\\S]*?)\\) produced empty output: ([\\s\\S]*?)$",
+    "source": "gs pdfwrite(%s) produced empty output: %v"
+  },
+  {
+    "code": "api.m318e0e83ce",
+    "pattern": "^dpkg -i 失败，尝试用 apt-get -f install 修复依赖后重试$",
+    "source": "dpkg -i 失败，尝试用 apt-get -f install 修复依赖后重试"
+  },
+  {
+    "code": "api.m92472dbbb8",
+    "pattern": "^OFD to PDF conversion produced no output$",
+    "source": "OFD to PDF conversion produced no output"
+  },
+  {
+    "code": "api.m1f50cbd14a",
+    "pattern": "^unsupported file type \\(use \\.ppd or \\.deb\\)$",
+    "source": "unsupported file type (use .ppd or .deb)"
+  },
+  {
+    "code": "api.m25db6da6b2",
+    "pattern": "^no even pages to extract \\(totalPages=([\\s\\S]*?)\\)$",
+    "source": "no even pages to extract (totalPages=%d)"
+  },
+  {
+    "code": "api.m2be93e3abc",
+    "pattern": "^无型号匹配，降级使用 IPP Everywhere（-m everywhere）$",
+    "source": "无型号匹配，降级使用 IPP Everywhere（-m everywhere）"
+  },
+  {
+    "code": "api.m5a993daec1",
+    "pattern": "^PPD 未真正生效（lpoptions 输出为空），队列可能是 raw 模式$",
+    "source": "PPD 未真正生效（lpoptions 输出为空），队列可能是 raw 模式"
+  },
+  {
+    "code": "api.m7e5a441592",
+    "pattern": "^lpoptions -l 输出为空——PPD 可能未真正生效（raw 队列）$",
+    "source": "lpoptions -l 输出为空——PPD 可能未真正生效（raw 队列）"
+  },
+  {
+    "code": "api.m36c40511fe",
+    "pattern": "^OFD to PDF conversion failed: ([\\s\\S]*?) - ([\\s\\S]*?)$",
+    "source": "OFD to PDF conversion failed: %w - %s"
+  },
+  {
+    "code": "api.m347b42874d",
+    "pattern": "^PPD 名含非法字符（只允许字母、数字与 \\. _ : % \\+ / -）$",
+    "source": "PPD 名含非法字符（只允许字母、数字与 . _ : %% + / -）"
+  },
+  {
+    "code": "api.mf332639b60",
+    "pattern": "^Konica Minolta bizhub 3000MF 黑白激光打印机$",
+    "source": "Konica Minolta bizhub 3000MF 黑白激光打印机"
+  },
+  {
+    "code": "api.m8a178356c9",
+    "pattern": "^guest user is managed automatically$",
+    "source": "guest user is managed automatically"
+  },
+  {
+    "code": "api.m23914eea1f",
+    "pattern": "^([\\s\\S]*?) 连接不支持 IPP Everywhere（仅 IPP 连接可用）$",
+    "source": "%s 连接不支持 IPP Everywhere（仅 IPP 连接可用）"
+  },
+  {
+    "code": "api.md04e635f73",
+    "pattern": "^protected admin role cannot change$",
+    "source": "protected admin role cannot change"
+  },
+  {
+    "code": "api.m8a64f4baf9",
+    "pattern": "^lpoptions 报告 PPD 不存在——队列可能是 raw 模式$",
+    "source": "lpoptions 报告 PPD 不存在——队列可能是 raw 模式"
+  },
+  {
+    "code": "api.m0c2e1bda2f",
+    "pattern": "^gs render page ([\\s\\S]*?) failed: ([\\s\\S]*?) - ([\\s\\S]*?)$",
+    "source": "gs render page %d failed: %w - %s"
+  },
+  {
+    "code": "api.m5d240fb9d9",
+    "pattern": "^failed to read rendered image: ([\\s\\S]*?)$",
+    "source": "failed to read rendered image: %w"
+  },
+  {
+    "code": "api.mcb48f6bb8c",
+    "pattern": "^打印机确认支持 IPP Everywhere（IPP 属性已验证）$",
+    "source": "打印机确认支持 IPP Everywhere（IPP 属性已验证）"
+  },
+  {
+    "code": "api.m01505f403a",
+    "pattern": "^failed to reload scheduled print$",
+    "source": "failed to reload scheduled print"
+  },
+  {
+    "code": "api.m6cbc75a689",
+    "pattern": "^failed to delete scheduled print$",
+    "source": "failed to delete scheduled print"
+  },
+  {
+    "code": "api.m3dac797cc2",
+    "pattern": "^Sharp MX-C2622R 等 PostScript 打印机$",
+    "source": "Sharp MX-C2622R 等 PostScript 打印机"
+  },
+  {
+    "code": "api.mb5743958b8",
+    "pattern": "^使用 IPP Everywhere（-m everywhere）$",
+    "source": "使用 IPP Everywhere（-m everywhere）"
+  },
+  {
+    "code": "api.md6d2fbca88",
+    "pattern": "^default admin cannot be deleted$",
+    "source": "default admin cannot be deleted"
+  },
+  {
+    "code": "api.m34489c5277",
+    "pattern": "^failed to process id card files$",
+    "source": "failed to process id card files"
+  },
+  {
+    "code": "api.m9b64760937",
+    "pattern": "^gs pdfwrite\\(([\\s\\S]*?)\\) failed: ([\\s\\S]*?) - ([\\s\\S]*?)$",
+    "source": "gs pdfwrite(%s) failed: %w - %s"
+  },
+  {
+    "code": "api.m701473a4f1",
+    "pattern": "^mode 只支持 Color / Gray / Lineart$",
+    "source": "mode 只支持 Color / Gray / Lineart"
+  },
+  {
+    "code": "api.m021ddbe3a6",
+    "pattern": "^failed to load scheduled prints$",
+    "source": "failed to load scheduled prints"
+  },
+  {
+    "code": "api.m26ef573618",
+    "pattern": "^HP LaserJet 1020 固件 \\+ A4 默认 PPD$",
+    "source": "HP LaserJet 1020 固件 + A4 默认 PPD"
+  },
+  {
+    "code": "api.mffd48a044e",
+    "pattern": "^username and password required$",
+    "source": "username and password required"
+  },
+  {
+    "code": "api.m4361f020a9",
+    "pattern": "^driver installation failed: ([\\s\\S]*?)$",
+    "source": "driver installation failed: %w"
+  },
+  {
+    "code": "api.m5554253500",
+    "pattern": "^failed to save scheduled print$",
+    "source": "failed to save scheduled print"
+  },
+  {
+    "code": "api.me4423f9360",
+    "pattern": "^failed to load scheduled print$",
+    "source": "failed to load scheduled print"
+  },
+  {
+    "code": "api.mc0f93c38a2",
+    "pattern": "^IPP 连接（DNS-SD 发现），CUPS 支持免驱动模式$",
+    "source": "IPP 连接（DNS-SD 发现），CUPS 支持免驱动模式"
+  },
+  {
+    "code": "api.m98a24bea90",
+    "pattern": "^guest 账号由访客模式自动管理，请通过设置关闭访客模式$",
+    "source": "guest 账号由访客模式自动管理，请通过设置关闭访客模式"
+  },
+  {
+    "code": "api.m7836d8c19c",
+    "pattern": "^failed to open converted file$",
+    "source": "failed to open converted file"
+  },
+  {
+    "code": "api.m02ee988a54",
+    "pattern": "^建立 raw 队列需要显式设置 allowRaw=true$",
+    "source": "建立 raw 队列需要显式设置 allowRaw=true"
+  },
+  {
+    "code": "api.m282cf662bc",
+    "pattern": "^failed to save converted file$",
+    "source": "failed to save converted file"
+  },
+  {
+    "code": "api.mf934d1b379",
+    "pattern": "^failed to create print record$",
+    "source": "failed to create print record"
+  },
+  {
+    "code": "api.mfd82835d58",
+    "pattern": "^Gutenprint 高质量打印驱动（支持大量打印机型号）$",
+    "source": "Gutenprint 高质量打印驱动（支持大量打印机型号）"
+  },
+  {
+    "code": "api.m123159e75f",
+    "pattern": "^admin username cannot change$",
+    "source": "admin username cannot change"
+  },
+  {
+    "code": "api.m9f1818e4d1",
+    "pattern": "^guest user cannot be deleted$",
+    "source": "guest user cannot be deleted"
+  },
+  {
+    "code": "api.mb0c1141826",
+    "pattern": "^normalizePDF: stat input: ([\\s\\S]*?)$",
+    "source": "normalizePDF: stat input: %w"
+  },
+  {
+    "code": "api.m53cbc64087",
+    "pattern": "^resolution ([\\s\\S]*?) 超出 50\\.\\.4800 范围$",
+    "source": "resolution %d 超出 50..4800 范围"
+  },
+  {
+    "code": "api.m251d440801",
+    "pattern": "^服务器缺少文件转换所需的工具，请联系管理员安装相关依赖。$",
+    "source": "服务器缺少文件转换所需的工具，请联系管理员安装相关依赖。"
+  },
+  {
+    "code": "api.m4a2905fc54",
+    "pattern": "^免驱动 IPP Everywhere（由打印机自报能力）$",
+    "source": "免驱动 IPP Everywhere（由打印机自报能力）"
+  },
+  {
+    "code": "api.ma3e5103b62",
+    "pattern": "^missing printerUri or jobId$",
+    "source": "missing printerUri or jobId"
+  },
+  {
+    "code": "api.md3fe12ea7f",
+    "pattern": "^failed to import PDF ([\\s\\S]*?): ([\\s\\S]*?)$",
+    "source": "failed to import PDF %s: %v"
+  },
+  {
+    "code": "api.maec1126b98",
+    "pattern": "^format 只支持 png / jpeg / pdf$",
+    "source": "format 只支持 png / jpeg / pdf"
+  },
+  {
+    "code": "api.mc4e96a62dd",
+    "pattern": "^create watermark config: ([\\s\\S]*?)$",
+    "source": "create watermark config: %w"
+  },
+  {
+    "code": "api.m83adb6e505",
+    "pattern": "^通用 PostScript / PCL（功能可能受限）$",
+    "source": "通用 PostScript / PCL（功能可能受限）"
+  },
+  {
+    "code": "api.mb6b2c26933",
+    "pattern": "^cannot delete current user$",
+    "source": "cannot delete current user"
+  },
+  {
+    "code": "api.m98a6b3792c",
+    "pattern": "^API 密钥不能签发新密钥，请使用浏览器登录后再创建$",
+    "source": "API 密钥不能签发新密钥，请使用浏览器登录后再创建"
+  },
+  {
+    "code": "api.mbe2f04e617",
+    "pattern": "^conversion failed: ([\\s\\S]*?) - ([\\s\\S]*?)$",
+    "source": "conversion failed: %w - %s"
+  },
+  {
+    "code": "api.m5b40437de0",
+    "pattern": "^conversion produced no PDF$",
+    "source": "conversion produced no PDF"
+  },
+  {
+    "code": "api.m09183b3d2b",
+    "pattern": "^该设备已添加为队列 ([\\s\\S]*?)，如需重新配置请先删除该队列$",
+    "source": "该设备已添加为队列 %s，如需重新配置请先删除该队列"
+  },
+  {
+    "code": "api.m9a53123e9b",
+    "pattern": "^文件过大或表单格式错误（单个驱动文件上限 64MB）$",
+    "source": "文件过大或表单格式错误（单个驱动文件上限 64MB）"
+  },
+  {
+    "code": "api.mf6a351f08a",
+    "pattern": "^failed to create temp file$",
+    "source": "failed to create temp file"
+  },
+  {
+    "code": "api.m2787118954",
+    "pattern": "^failed to get printer info$",
+    "source": "failed to get printer info"
+  },
+  {
+    "code": "api.m42eb0eabf6",
+    "pattern": "^create output temp dir: ([\\s\\S]*?)$",
+    "source": "create output temp dir: %w"
+  },
+  {
+    "code": "api.m19b5363107",
+    "pattern": "^API 密钥不能删除密钥，请使用浏览器登录后再操作$",
+    "source": "API 密钥不能删除密钥，请使用浏览器登录后再操作"
+  },
+  {
+    "code": "api.m3363d40c31",
+    "pattern": "^driver removal failed: ([\\s\\S]*?)$",
+    "source": "driver removal failed: %w"
+  },
+  {
+    "code": "api.m4b98f0be51",
+    "pattern": "^failed to detect printers$",
+    "source": "failed to detect printers"
+  },
+  {
+    "code": "api.me2be49ad9d",
+    "pattern": "^failed to add printer: ([\\s\\S]*?)$",
+    "source": "failed to add printer: %w"
+  },
+  {
+    "code": "api.me045195baa",
+    "pattern": "^cannot process PDF ([\\s\\S]*?): ([\\s\\S]*?)$",
+    "source": "cannot process PDF %s: %w"
+  },
+  {
+    "code": "api.mc71d0861a4",
+    "pattern": "^scanimage -A -d ([\\s\\S]*?) 失败: ([\\s\\S]*?)$",
+    "source": "scanimage -A -d %q 失败: %w"
+  },
+  {
+    "code": "api.m1a8a19b00d",
+    "pattern": "^([\\s\\S]*?) 连接不支持免驱动模式（仅 IPP 连接可用）$",
+    "source": "%s 连接不支持免驱动模式（仅 IPP 连接可用）"
+  },
+  {
+    "code": "api.m19e5a38cd5",
+    "pattern": "^Epson L380, L455 等国行喷墨打印机$",
+    "source": "Epson L380, L455 等国行喷墨打印机"
+  },
+  {
+    "code": "api.m3533e5aeea",
+    "pattern": "^admin role cannot change$",
+    "source": "admin role cannot change"
+  },
+  {
+    "code": "api.m1cb0328924",
+    "pattern": "^failed to create api key$",
+    "source": "failed to create api key"
+  },
+  {
+    "code": "api.m83815daaf3",
+    "pattern": "^failed to delete api key$",
+    "source": "failed to delete api key"
+  },
+  {
+    "code": "api.m1d23e6b3de",
+    "pattern": "^embedded font is missing$",
+    "source": "embedded font is missing"
+  },
+  {
+    "code": "api.m05d9fbf11e",
+    "pattern": "^invalid image dimensions$",
+    "source": "invalid image dimensions"
+  },
+  {
+    "code": "api.m57763a6ddb",
+    "pattern": "^schedule_weekday 必须在 0-6$",
+    "source": "schedule_weekday 必须在 0-6"
+  },
+  {
+    "code": "api.ma6fda4bbca",
+    "pattern": "^cups-driverd 指纹匹配命中 ([\\s\\S]*?) 条$",
+    "source": "cups-driverd 指纹匹配命中 %d 条"
+  },
+  {
+    "code": "api.m447b14e558",
+    "pattern": "^failed to hash password$",
+    "source": "failed to hash password"
+  },
+  {
+    "code": "api.mb9bdde1283",
+    "pattern": "^admin cannot be deleted$",
+    "source": "admin cannot be deleted"
+  },
+  {
+    "code": "api.m4ae157814a",
+    "pattern": "^failed to load settings$",
+    "source": "failed to load settings"
+  },
+  {
+    "code": "api.m76cbf9c224",
+    "pattern": "^failed to list api keys$",
+    "source": "failed to list api keys"
+  },
+  {
+    "code": "api.mb6bc0b274b",
+    "pattern": "^driver name is required$",
+    "source": "driver name is required"
+  },
+  {
+    "code": "api.mb3024a7e11",
+    "pattern": "^failed to list printers$",
+    "source": "failed to list printers"
+  },
+  {
+    "code": "api.me90cc5610b",
+    "pattern": "^unsupported file type: ([\\s\\S]*)$",
+    "source": "unsupported file type: "
+  },
+  {
+    "code": "api.m02479347e7",
+    "pattern": "^generate blank page: ([\\s\\S]*?)$",
+    "source": "generate blank page: %w"
+  },
+  {
+    "code": "api.ma2efa9846b",
+    "pattern": "^no image files provided$",
+    "source": "no image files provided"
+  },
+  {
+    "code": "api.m3f7fe17c11",
+    "pattern": "^schedule_time 必须是 HH:MM$",
+    "source": "schedule_time 必须是 HH:MM"
+  },
+  {
+    "code": "api.m068d39390c",
+    "pattern": "^write watermark pdf: ([\\s\\S]*?)$",
+    "source": "write watermark pdf: %w"
+  },
+  {
+    "code": "api.mb0de82a844",
+    "pattern": "^设置 A4 默认纸张失败（不影响使用）: ([\\s\\S]*?)$",
+    "source": "设置 A4 默认纸张失败（不影响使用）: %v"
+  },
+  {
+    "code": "api.mf965be6d01",
+    "pattern": "^guest 账号由访客模式自动管理，不能编辑$",
+    "source": "guest 账号由访客模式自动管理，不能编辑"
+  },
+  {
+    "code": "api.m510c91fecc",
+    "pattern": "^invalid maxPagesPerJob$",
+    "source": "invalid maxPagesPerJob"
+  },
+  {
+    "code": "api.mb3cbc108c0",
+    "pattern": "^invalid maxUploadBytes$",
+    "source": "invalid maxUploadBytes"
+  },
+  {
+    "code": "api.m287e2acb92",
+    "pattern": "^invalid multipart form$",
+    "source": "invalid multipart form"
+  },
+  {
+    "code": "api.m7024852ca8",
+    "pattern": "^failed to cancel job: ([\\s\\S]*)$",
+    "source": "failed to cancel job: "
+  },
+  {
+    "code": "api.ma10c5a47cc",
+    "pattern": "^指定的驱动不存在: ([\\s\\S]*?)（请重新扫描后再选）$",
+    "source": "指定的驱动不存在: %s（请重新扫描后再选）"
+  },
+  {
+    "code": "api.m5cd11fd79d",
+    "pattern": "^failed to load records$",
+    "source": "failed to load records"
+  },
+  {
+    "code": "api.md2c6f2bb3a",
+    "pattern": "^failed to load profile$",
+    "source": "failed to load profile"
+  },
+  {
+    "code": "api.m264c5e83cd",
+    "pattern": "^generate watermark: ([\\s\\S]*?)$",
+    "source": "generate watermark: %w"
+  },
+  {
+    "code": "api.m7a1eba19cc",
+    "pattern": "^open watermark pdf: ([\\s\\S]*?)$",
+    "source": "open watermark pdf: %w"
+  },
+  {
+    "code": "api.m298197363f",
+    "pattern": "^failed to create user$",
+    "source": "failed to create user"
+  },
+  {
+    "code": "api.mb95318500e",
+    "pattern": "^failed to update user$",
+    "source": "failed to update user"
+  },
+  {
+    "code": "api.m2f4b050dcb",
+    "pattern": "^failed to delete user$",
+    "source": "failed to delete user"
+  },
+  {
+    "code": "api.mb2af9fc3b8",
+    "pattern": "^invalid retentionDays$",
+    "source": "invalid retentionDays"
+  },
+  {
+    "code": "api.m0c798762eb",
+    "pattern": "^invalid expiresInDays$",
+    "source": "invalid expiresInDays"
+  },
+  {
+    "code": "api.m821d54140a",
+    "pattern": "^api key limit reached$",
+    "source": "api key limit reached"
+  },
+  {
+    "code": "api.m5a751291ce",
+    "pattern": "^deviceUri is required$",
+    "source": "deviceUri is required"
+  },
+  {
+    "code": "api.m04895b4a2c",
+    "pattern": "^修复依赖后 dpkg -i 仍失败: ([\\s\\S]*?)$",
+    "source": "修复依赖后 dpkg -i 仍失败: %w"
+  },
+  {
+    "code": "api.m6c9961b1de",
+    "pattern": "^PPD 名过长（([\\s\\S]*?) 字节，上限 512）$",
+    "source": "PPD 名过长（%d 字节，上限 512）"
+  },
+  {
+    "code": "api.mc3b4600f2e",
+    "pattern": "^missing uri parameter$",
+    "source": "missing uri parameter"
+  },
+  {
+    "code": "api.m370a603524",
+    "pattern": "^missing printer field$",
+    "source": "missing printer field"
+  },
+  {
+    "code": "api.mf71ca29496",
+    "pattern": "^failed to load record$",
+    "source": "failed to load record"
+  },
+  {
+    "code": "api.m3c1d94eeb8",
+    "pattern": "^非法的 schedule_type: ([\\s\\S]*?)$",
+    "source": "非法的 schedule_type: %q"
+  },
+  {
+    "code": "api.m95965a63c5",
+    "pattern": "^schedule_day 必须在 1-31$",
+    "source": "schedule_day 必须在 1-31"
+  },
+  {
+    "code": "api.m896cb5e9f6",
+    "pattern": "^IPP 属性查询失败（不影响使用）: ([\\s\\S]*?)$",
+    "source": "IPP 属性查询失败（不影响使用）: %v"
+  },
+  {
+    "code": "api.m19f49127e7",
+    "pattern": "^failed to list users$",
+    "source": "failed to list users"
+  },
+  {
+    "code": "api.m6f148e463f",
+    "pattern": "^invalid request body$",
+    "source": "invalid request body"
+  },
+  {
+    "code": "api.m334e52a40a",
+    "pattern": "^failed to read pages$",
+    "source": "failed to read pages"
+  },
+  {
+    "code": "api.mb875190dee",
+    "pattern": "^page ([\\s\\S]*?) out of range$",
+    "source": "page %d out of range"
+  },
+  {
+    "code": "api.mdbc040e046",
+    "pattern": "^队列名 ([\\s\\S]*?) 的 50 个变体全部被占用$",
+    "source": "队列名 %s 的 50 个变体全部被占用"
+  },
+  {
+    "code": "api.m36113625cf",
+    "pattern": "^已有驱动任务正在执行，请等待其完成后重试$",
+    "source": "已有驱动任务正在执行，请等待其完成后重试"
+  },
+  {
+    "code": "api.m5d21d40094",
+    "pattern": "^missing csrf cookie$",
+    "source": "missing csrf cookie"
+  },
+  {
+    "code": "api.mbacd7c0f7a",
+    "pattern": "^missing credentials$",
+    "source": "missing credentials"
+  },
+  {
+    "code": "api.m8310ebc38b",
+    "pattern": "^invalid credentials$",
+    "source": "invalid credentials"
+  },
+  {
+    "code": "api.m0611692f80",
+    "pattern": "^failed to save file$",
+    "source": "failed to save file"
+  },
+  {
+    "code": "api.m99c51b1cd1",
+    "pattern": "^failed to list jobs$",
+    "source": "failed to list jobs"
+  },
+  {
+    "code": "api.m84c32faff2",
+    "pattern": "^failed to read file$",
+    "source": "failed to read file"
+  },
+  {
+    "code": "api.ma7cbe2f64a",
+    "pattern": "^update manifest: ([\\s\\S]*?)$",
+    "source": "update manifest: %w"
+  },
+  {
+    "code": "api.m385724b0b3",
+    "pattern": "^no pages to compose$",
+    "source": "no pages to compose"
+  },
+  {
+    "code": "api.m90919f4c9f",
+    "pattern": "^create temp dir: ([\\s\\S]*?)$",
+    "source": "create temp dir: %w"
+  },
+  {
+    "code": "api.mf14be5aac0",
+    "pattern": "^failed to open file$",
+    "source": "failed to open file"
+  },
+  {
+    "code": "api.m613aaa21e7",
+    "pattern": "^failed to stat file$",
+    "source": "failed to stat file"
+  },
+  {
+    "code": "api.md8735b9bb4",
+    "pattern": "^failed to copy file$",
+    "source": "failed to copy file"
+  },
+  {
+    "code": "api.m612fe908e0",
+    "pattern": "^scanimage -L 失败: ([\\s\\S]*?)$",
+    "source": "scanimage -L 失败: %w"
+  },
+  {
+    "code": "api.m01fa9df2fb",
+    "pattern": "^apply watermark: ([\\s\\S]*?)$",
+    "source": "apply watermark: %w"
+  },
+  {
+    "code": "api.m53009a411f",
+    "pattern": "^IPP 连接，CUPS 支持免驱动模式$",
+    "source": "IPP 连接，CUPS 支持免驱动模式"
+  },
+  {
+    "code": "api.mda7631cc97",
+    "pattern": "^lpstat -p ([\\s\\S]*?) 失败: ([\\s\\S]*?)$",
+    "source": "lpstat -p %s 失败: %v"
+  },
+  {
+    "code": "api.mcd40e2c96f",
+    "pattern": "^lpoptions -l 失败: ([\\s\\S]*?)$",
+    "source": "lpoptions -l 失败: %v"
+  },
+  {
+    "code": "api.m7936571a68",
+    "pattern": "^invalid csrf token$",
+    "source": "invalid csrf token"
+  },
+  {
+    "code": "api.m643bcf0245",
+    "pattern": "^customCss too long$",
+    "source": "customCss too long"
+  },
+  {
+    "code": "api.mdf51529c86",
+    "pattern": "^missing mode field$",
+    "source": "missing mode field"
+  },
+  {
+    "code": "api.m5f9e24e06b",
+    "pattern": "^unsupported mode: ([\\s\\S]*)$",
+    "source": "unsupported mode: "
+  },
+  {
+    "code": "api.m04436a1389",
+    "pattern": "^missing file field$",
+    "source": "missing file field"
+  },
+  {
+    "code": "api.md2e1f75868",
+    "pattern": "^write metadata: ([\\s\\S]*?)$",
+    "source": "write metadata: %w"
+  },
+  {
+    "code": "api.m8d4db744ba",
+    "pattern": "^pdf text panic: ([\\s\\S]*?)$",
+    "source": "pdf text panic: %v"
+  },
+  {
+    "code": "api.md6ac6819e1",
+    "pattern": "^pdfcpu collect: ([\\s\\S]*?)$",
+    "source": "pdfcpu collect: %w"
+  },
+  {
+    "code": "api.m51bb1b9ee6",
+    "pattern": "^invalid date range$",
+    "source": "invalid date range"
+  },
+  {
+    "code": "api.m2628d55655",
+    "pattern": "^指定的扫描设备不存在,请刷新设备列表$",
+    "source": "指定的扫描设备不存在,请刷新设备列表"
+  },
+  {
+    "code": "api.m4f0e24895e",
+    "pattern": "^username required$",
+    "source": "username required"
+  },
+  {
+    "code": "api.mce2508948e",
+    "pattern": "^api key not found$",
+    "source": "api key not found"
+  },
+  {
+    "code": "api.mb0450b198b",
+    "pattern": "^no files provided$",
+    "source": "no files provided"
+  },
+  {
+    "code": "api.m94d1f4a7e7",
+    "pattern": "^invalid file name$",
+    "source": "invalid file name"
+  },
+  {
+    "code": "api.m840e4b43b9",
+    "pattern": "^conversion failed$",
+    "source": "conversion failed"
+  },
+  {
+    "code": "api.m1b22e7d259",
+    "pattern": "^invalid record id$",
+    "source": "invalid record id"
+  },
+  {
+    "code": "api.m824b5803ed",
+    "pattern": "^resolution 非法: ([\\s\\S]*?)$",
+    "source": "resolution 非法: %v"
+  },
+  {
+    "code": "api.m63bec3190b",
+    "pattern": "^HP 官方开源驱动 \\(HPLIP\\)$",
+    "source": "HP 官方开源驱动 (HPLIP)"
+  },
+  {
+    "code": "api.m11d2e4033a",
+    "pattern": "^PPD 未生效，回滚删除队列 ([\\s\\S]*?)$",
+    "source": "PPD 未生效，回滚删除队列 %s"
+  },
+  {
+    "code": "api.mf33c2ba59d",
+    "pattern": "^PPD 列表: ([\\s\\S]*?) → ([\\s\\S]*?) 行$",
+    "source": "PPD 列表: %d → %d 行"
+  },
+  {
+    "code": "api.m280afd608c",
+    "pattern": "^cleanup failed: ([\\s\\S]*)$",
+    "source": "cleanup failed: "
+  },
+  {
+    "code": "api.mf677cc4df4",
+    "pattern": "^guest 不支持 API 密钥$",
+    "source": "guest 不支持 API 密钥"
+  },
+  {
+    "code": "api.m0166b531a4",
+    "pattern": "^compose failed: ([\\s\\S]*)$",
+    "source": "compose failed: "
+  },
+  {
+    "code": "api.m51407e9079",
+    "pattern": "^unknown driver: ([\\s\\S]*)$",
+    "source": "unknown driver: "
+  },
+  {
+    "code": "api.m1030caeb7e",
+    "pattern": "^file is required$",
+    "source": "file is required"
+  },
+  {
+    "code": "api.m45307527ce",
+    "pattern": "^pdfcpu merge: ([\\s\\S]*?)$",
+    "source": "pdfcpu merge: %w"
+  },
+  {
+    "code": "api.m4c4fbdc5c2",
+    "pattern": "^record not found$",
+    "source": "record not found"
+  },
+  {
+    "code": "api.mcdfef125f1",
+    "pattern": "^scanimage 失败: ([\\s\\S]*?)$",
+    "source": "scanimage 失败: %w"
+  },
+  {
+    "code": "api.m522d22c7a3",
+    "pattern": "^gs 合成 PDF 失败: ([\\s\\S]*?)$",
+    "source": "gs 合成 PDF 失败: %w"
+  },
+  {
+    "code": "api.mdd9bc15ff7",
+    "pattern": "^驱动 ([\\s\\S]*?) 不支持当前架构 ([\\s\\S]*?)$",
+    "source": "驱动 %s 不支持当前架构 %s"
+  },
+  {
+    "code": "api.mda7c3c5853",
+    "pattern": "^Gutenprint 高质量驱动$",
+    "source": "Gutenprint 高质量驱动"
+  },
+  {
+    "code": "api.mbdbd963d95",
+    "pattern": "^驱动 ([\\s\\S]*?) 已安装，跳过安装步骤$",
+    "source": "驱动 %s 已安装，跳过安装步骤"
+  },
+  {
+    "code": "api.mb20886cc9b",
+    "pattern": "^使用管理员指定的 PPD: ([\\s\\S]*?)$",
+    "source": "使用管理员指定的 PPD: %s"
+  },
+  {
+    "code": "api.m5632ef2f78",
+    "pattern": "^invalid payload$",
+    "source": "invalid payload"
+  },
+  {
+    "code": "api.m06346a8c9a",
+    "pattern": "^guest 是访客模式保留账号$",
+    "source": "guest 是访客模式保留账号"
+  },
+  {
+    "code": "api.m3a8e1794cd",
+    "pattern": "^invalid user id$",
+    "source": "invalid user id"
+  },
+  {
+    "code": "api.mca72a66eec",
+    "pattern": "^获取 PPD 列表失败: ([\\s\\S]*?)$",
+    "source": "获取 PPD 列表失败: %w"
+  },
+  {
+    "code": "api.m6c0aec7f0f",
+    "pattern": "^persist ppd: ([\\s\\S]*?)$",
+    "source": "persist ppd: %w"
+  },
+  {
+    "code": "api.m0797c8bebf",
+    "pattern": "^page ([\\s\\S]*?) is null$",
+    "source": "page %d is null"
+  },
+  {
+    "code": "api.mf6cdac9c3e",
+    "pattern": "^不支持的 format: ([\\s\\S]*?)$",
+    "source": "不支持的 format: %s"
+  },
+  {
+    "code": "api.m353a413f8b",
+    "pattern": "^stat 输出文件失败: ([\\s\\S]*?)$",
+    "source": "stat 输出文件失败: %w"
+  },
+  {
+    "code": "api.m4b3a86fbf8",
+    "pattern": "^列出扫描设备失败: ([\\s\\S]*?)\n([\\s\\S]*?)$",
+    "source": "列出扫描设备失败: %v\n%s"
+  },
+  {
+    "code": "api.m7c45a387e5",
+    "pattern": "^获取扫描参数失败: ([\\s\\S]*?)\n([\\s\\S]*?)$",
+    "source": "获取扫描参数失败: %v\n%s"
+  },
+  {
+    "code": "api.m76a7cef690",
+    "pattern": "^社区驱动 \\(Foomatic\\)$",
+    "source": "社区驱动 (Foomatic)"
+  },
+  {
+    "code": "api.m036932891f",
+    "pattern": "^user not found$",
+    "source": "user not found"
+  },
+  {
+    "code": "api.m5894ecf69e",
+    "pattern": "^文件超出管理员设置的大小上限$",
+    "source": "文件超出管理员设置的大小上限"
+  },
+  {
+    "code": "api.m4d81d8ff48",
+    "pattern": "^libreoffice ([\\s\\S]*?)$",
+    "source": "libreoffice %w"
+  },
+  {
+    "code": "api.m126531826f",
+    "pattern": "^unknown job id$",
+    "source": "unknown job id"
+  },
+  {
+    "code": "api.mfb8857589e",
+    "pattern": "^ghostscript ([\\s\\S]*?)$",
+    "source": "ghostscript %w"
+  },
+  {
+    "code": "api.mc6bdbe8e92",
+    "pattern": "^文件页数超出管理员设置的上限$",
+    "source": "文件页数超出管理员设置的上限"
+  },
+  {
+    "code": "api.maffcf4c8d2",
+    "pattern": "^file not found$",
+    "source": "file not found"
+  },
+  {
+    "code": "api.mf56f775613",
+    "pattern": "^该扫描任务尚未成功,无法下载$",
+    "source": "该扫描任务尚未成功,无法下载"
+  },
+  {
+    "code": "api.m5b43b433cc",
+    "pattern": "^office 转换失败：([\\s\\S]*?)$",
+    "source": "office 转换失败：%w"
+  },
+  {
+    "code": "api.meca4af3eaa",
+    "pattern": "^ppdUri 不合法: ([\\s\\S]*?)$",
+    "source": "ppdUri 不合法: %v"
+  },
+  {
+    "code": "api.m198d6842d6",
+    "pattern": "^IPP 属性查询失败: ([\\s\\S]*?)$",
+    "source": "IPP 属性查询失败: %v"
+  },
+  {
+    "code": "api.m65788b1abe",
+    "pattern": "^name required$",
+    "source": "name required"
+  },
+  {
+    "code": "api.m1debb95039",
+    "pattern": "^name too long$",
+    "source": "name too long"
+  },
+  {
+    "code": "api.mf73004ac94",
+    "pattern": "^session error$",
+    "source": "session error"
+  },
+  {
+    "code": "api.me9363f76e1",
+    "pattern": "^not installed$",
+    "source": "not installed"
+  },
+  {
+    "code": "api.m3b28e79c17",
+    "pattern": "^create ([\\s\\S]*?): ([\\s\\S]*?)$",
+    "source": "create %s: %w"
+  },
+  {
+    "code": "api.m3f82839042",
+    "pattern": "^lpinfo -m: ([\\s\\S]*?)$",
+    "source": "lpinfo -m: %w"
+  },
+  {
+    "code": "api.m76f43afd6b",
+    "pattern": "^print error: ([\\s\\S]*)$",
+    "source": "print error: "
+  },
+  {
+    "code": "api.mccf5af1e57",
+    "pattern": "^load font: ([\\s\\S]*?)$",
+    "source": "load font: %w"
+  },
+  {
+    "code": "api.m7b7fdec836",
+    "pattern": "^PPD 文件 ([\\s\\S]*?) 不存在$",
+    "source": "PPD 文件 %s 不存在"
+  },
+  {
+    "code": "api.me9d83f01c9",
+    "pattern": "^unauthorized$",
+    "source": "unauthorized"
+  },
+  {
+    "code": "api.m395e6be13d",
+    "pattern": "^invalid role$",
+    "source": "invalid role"
+  },
+  {
+    "code": "api.mbb86558220",
+    "pattern": "^login failed$",
+    "source": "login failed"
+  },
+  {
+    "code": "api.m9e1ff4275e",
+    "pattern": "^invalid json$",
+    "source": "invalid json"
+  },
+  {
+    "code": "api.m9513c98c02",
+    "pattern": "^候选查询繁忙，请稍后重试$",
+    "source": "候选查询繁忙，请稍后重试"
+  },
+  {
+    "code": "api.mec487986ed",
+    "pattern": "^write ([\\s\\S]*?): ([\\s\\S]*?)$",
+    "source": "write %s: %w"
+  },
+  {
+    "code": "api.m339c5f4d8b",
+    "pattern": "^PPD 名不能包含 \\.\\.$",
+    "source": "PPD 名不能包含 .."
+  },
+  {
+    "code": "api.m16a455c971",
+    "pattern": "^PPD 名不能是绝对路径$",
+    "source": "PPD 名不能是绝对路径"
+  },
+  {
+    "code": "api.m40d8668665",
+    "pattern": "^缺少 device 参数$",
+    "source": "缺少 device 参数"
+  },
+  {
+    "code": "api.mf92e4d96a4",
+    "pattern": "^请求体不是合法 JSON$",
+    "source": "请求体不是合法 JSON"
+  },
+  {
+    "code": "api.me009916610",
+    "pattern": "^打开待打印文件失败：([\\s\\S]*?)$",
+    "source": "打开待打印文件失败：%w"
+  },
+  {
+    "code": "api.m763e401a9a",
+    "pattern": "^printer 不能为空$",
+    "source": "printer 不能为空"
+  },
+  {
+    "code": "api.mf80be03343",
+    "pattern": "^PPD 匹配失败: ([\\s\\S]*?)$",
+    "source": "PPD 匹配失败: %v"
+  },
+  {
+    "code": "api.m98b134b603",
+    "pattern": "^列出扫描设备失败: ([\\s\\S]*?)$",
+    "source": "列出扫描设备失败: %v"
+  },
+  {
+    "code": "api.ma5cae057f7",
+    "pattern": "^查询扫描记录失败: ([\\s\\S]*?)$",
+    "source": "查询扫描记录失败: %v"
+  },
+  {
+    "code": "api.ma17168bcad",
+    "pattern": "^扫描文件已不存在: ([\\s\\S]*?)$",
+    "source": "扫描文件已不存在: %v"
+  },
+  {
+    "code": "api.mf36c383104",
+    "pattern": "^PPD 匹配出错: ([\\s\\S]*?)$",
+    "source": "PPD 匹配出错: %v"
+  },
+  {
+    "code": "api.me1482b2003",
+    "pattern": "^自动匹配 PPD: ([\\s\\S]*?)$",
+    "source": "自动匹配 PPD: %s"
+  },
+  {
+    "code": "api.mc40fbef320",
+    "pattern": "^page ([\\s\\S]*?): ([\\s\\S]*?)$",
+    "source": "page %d: %w"
+  },
+  {
+    "code": "api.mfdeed55098",
+    "pattern": "^EOF-bounded$",
+    "source": "EOF-bounded"
+  },
+  {
+    "code": "api.m2afde7b11a",
+    "pattern": "^无法计算下一次执行时间$",
+    "source": "无法计算下一次执行时间"
+  },
+  {
+    "code": "api.m6bf3ad9ed8",
+    "pattern": "^ofd 转换失败：([\\s\\S]*?)$",
+    "source": "ofd 转换失败：%w"
+  },
+  {
+    "code": "api.ma6c94f558e",
+    "pattern": "^回退文件读取失败：([\\s\\S]*?)$",
+    "source": "回退文件读取失败：%w"
+  },
+  {
+    "code": "api.m0d90fa6cca",
+    "pattern": "^IPP 提交失败：([\\s\\S]*?)$",
+    "source": "IPP 提交失败：%w"
+  },
+  {
+    "code": "api.ma11a341fba",
+    "pattern": "^!! 命令失败: ([\\s\\S]*?)$",
+    "source": "!! 命令失败: %v"
+  },
+  {
+    "code": "api.mb5121d5901",
+    "pattern": "^invalid id$",
+    "source": "invalid id"
+  },
+  {
+    "code": "api.m7b23b16f11",
+    "pattern": "^落打印历史失败：([\\s\\S]*?)$",
+    "source": "落打印历史失败：%w"
+  },
+  {
+    "code": "api.m4034514ede",
+    "pattern": "^删除记录失败: ([\\s\\S]*?)$",
+    "source": "删除记录失败: %v"
+  },
+  {
+    "code": "api.m696515b959",
+    "pattern": "^管理员上传的 PPD$",
+    "source": "管理员上传的 PPD"
+  },
+  {
+    "code": "api.m33aef40940",
+    "pattern": "^Epson 国行驱动$",
+    "source": "Epson 国行驱动"
+  },
+  {
+    "code": "api.m43ed5c457b",
+    "pattern": "^forbidden$",
+    "source": "forbidden"
+  },
+  {
+    "code": "api.m8172d2b5b8",
+    "pattern": "^已达到密钥数量上限$",
+    "source": "已达到密钥数量上限"
+  },
+  {
+    "code": "api.m48b30b22c0",
+    "pattern": "^front: ([\\s\\S]*?)$",
+    "source": "front: %w"
+  },
+  {
+    "code": "api.m5aa7fb9c79",
+    "pattern": "^PPD 名不能为空$",
+    "source": "PPD 名不能为空"
+  },
+  {
+    "code": "api.m484fe1e0ba",
+    "pattern": "^缺少 device$",
+    "source": "缺少 device"
+  },
+  {
+    "code": "api.m53c9dc6f32",
+    "pattern": "^任务不存在或已过期$",
+    "source": "任务不存在或已过期"
+  },
+  {
+    "code": "api.m907ba78b45",
+    "pattern": "^not found$",
+    "source": "not found"
+  },
+  {
+    "code": "api.m0924b4ce30",
+    "pattern": "^原始文件缺失：([\\s\\S]*?)$",
+    "source": "原始文件缺失：%w"
+  },
+  {
+    "code": "api.m8edd236f2d",
+    "pattern": "^解析页数失败：([\\s\\S]*?)$",
+    "source": "解析页数失败：%w"
+  },
+  {
+    "code": "api.m30f166c9c3",
+    "pattern": "^图片转换失败：([\\s\\S]*?)$",
+    "source": "图片转换失败：%w"
+  },
+  {
+    "code": "api.me1c24c911a",
+    "pattern": "^读取页数失败：([\\s\\S]*?)$",
+    "source": "读取页数失败：%w"
+  },
+  {
+    "code": "api.m1826c5b2a8",
+    "pattern": "^文本转换失败：([\\s\\S]*?)$",
+    "source": "文本转换失败：%w"
+  },
+  {
+    "code": "api.m44388a38af",
+    "pattern": "^back: ([\\s\\S]*?)$",
+    "source": "back: %w"
+  },
+  {
+    "code": "api.m9b19c6bc81",
+    "pattern": "^探测失败: ([\\s\\S]*?)$",
+    "source": "探测失败: %v"
+  },
+  {
+    "code": "api.m855fc77476",
+    "pattern": "^落库失败: ([\\s\\S]*?)$",
+    "source": "落库失败: %v"
+  },
+  {
+    "code": "api.m0b33052f97",
+    "pattern": "^文件转换失败：([\\s\\S]*)$",
+    "source": "文件转换失败："
+  },
+  {
+    "code": "api.ma150ae5947",
+    "pattern": "^无权访问该任务$",
+    "source": "无权访问该任务"
+  },
+  {
+    "code": "api.mefb05b1751",
+    "pattern": "^无权取消该任务$",
+    "source": "无权取消该任务"
+  },
+  {
+    "code": "api.m1af03d1dd8",
+    "pattern": "^厂商原厂驱动$",
+    "source": "厂商原厂驱动"
+  },
+  {
+    "code": "api.m2b29c9d976",
+    "pattern": "^id 非法$",
+    "source": "id 非法"
+  },
+  {
+    "code": "api.me4ba03868d",
+    "pattern": "^记录不存在$",
+    "source": "记录不存在"
+  },
+  {
+    "code": "api.m0f9bf71dc0",
+    "pattern": "^文件缺失$",
+    "source": "文件缺失"
+  },
+  {
+    "code": "api.mcce8944500",
+    "pattern": "^未知来源$",
+    "source": "未知来源"
+  }
+]

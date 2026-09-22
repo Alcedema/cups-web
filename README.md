@@ -1,3 +1,14 @@
+# CUPS Web — Alcedema bilingual fork
+
+**Development home:** [GitLab](https://gitlab.com/Alcedema/cups-web) · **Releases:** [GitLab releases](https://gitlab.com/Alcedema/cups-web/-/releases)
+
+English and Simplified Chinese, account language preferences and password changes. Set `DEFAULT_LANGUAGE=en` or `zh-CN`; users can override it in **Account settings**. English is the default.
+
+This is a direct fork of [hanxi/cups-web](https://github.com/hanxi/cups-web), initially based on v0.2.15. The MIT licence and upstream attribution are preserved. GitHub is a push mirror; contribute through GitLab. Upstream release integrations require manual review and are never automatically deployed.
+
+See [fork documentation](docs/alcedema-fork.md) for configuration, APIs, builds, mirroring, upstream checks and rollback. Original upstream documentation follows.
+
+---
 # 🖨️ CUPS Web — 网页打印管理
 
 <div align="center">

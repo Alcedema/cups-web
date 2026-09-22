@@ -4,6 +4,7 @@ import PrintView from '../views/PrintView.vue'
 import AdminView from '../views/AdminView.vue'
 
 const routes = [
+  { path: '/account', name: 'account', component: () => import('../views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'login', component: LoginView, meta: { requiresAuth: false } },
   { path: '/print', name: 'print', component: PrintView, meta: { requiresAuth: true } },

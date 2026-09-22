@@ -4,17 +4,17 @@
       <div class="flex items-center justify-between cursor-pointer select-none" @click="expanded = !expanded">
         <div class="flex items-center gap-2 font-semibold min-w-0">
           <UIcon name="i-lucide-activity" class="w-5 h-5 shrink-0" />
-          <span class="truncate">打印机状态</span>
+          <span class="truncate">{{ t('ui.md59edde46d') }}</span>
           <!-- 折叠时显示摘要 -->
           <template v-if="!expanded && printerInfo">
-            <span class="text-xs text-muted truncate">{{ printerInfo.name || '未知' }}</span>
+            <span class="text-xs text-muted truncate">{{ printerInfo.name || t('ui.m4d8c1c5b42') }}</span>
             <UBadge :color="printerStateColor(printerInfo.state)" variant="subtle" size="xs" class="shrink-0">
               {{ printerStateText(printerInfo.state) }}
             </UBadge>
           </template>
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" @click.stop="$emit('refresh')" :loading="loading" />
+          <UButton :aria-label="t('accessibility.refresh')" variant="ghost" size="xs" icon="i-lucide-refresh-cw" @click.stop="$emit('refresh')" :loading="loading" />
           <UIcon
             :name="expanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
             class="w-4 h-4 text-muted transition-transform duration-200"
@@ -29,7 +29,7 @@
     >
     <div>
       <div v-if="!printerUri" class="text-center py-6 text-muted text-sm">
-        请先选择打印机
+        {{ t('ui.md645ec3d81') }}
       </div>
       <div v-else-if="loading && !printerInfo" class="text-center py-4">
         <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin mx-auto text-muted" />
@@ -43,7 +43,7 @@
         <div class="flex items-center justify-between p-2 bg-elevated rounded-lg">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-info" class="w-4 h-4 text-info" />
-            <span class="text-sm font-medium">打印机状态</span>
+            <span class="text-sm font-medium">{{ t('ui.md59edde46d') }}</span>
           </div>
           <UBadge :color="printerStateColor(printerInfo.state)" variant="subtle" size="xs">
             {{ printerStateText(printerInfo.state) }}
@@ -54,7 +54,7 @@
         <div class="flex items-center justify-between p-2 bg-elevated rounded-lg">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-list-ordered" class="w-4 h-4 text-primary" />
-            <span class="text-sm font-medium">队列任务数</span>
+            <span class="text-sm font-medium">{{ t('ui.m783911c508') }}</span>
           </div>
           <span class="text-sm font-bold">{{ printerInfo.queuedJobs }}</span>
         </div>
@@ -65,7 +65,7 @@
         <div v-if="printerInfo.stateDurationSeconds > 0" class="flex items-center justify-between p-2 bg-elevated rounded-lg">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-clock" class="w-4 h-4 text-success" />
-            <span class="text-sm font-medium">状态持续</span>
+            <span class="text-sm font-medium">{{ t('ui.m7eb293fe5e') }}</span>
           </div>
           <span class="text-sm">{{ formatDurationSeconds(printerInfo.stateDurationSeconds) }}</span>
         </div>
@@ -74,7 +74,7 @@
         <div v-if="printerInfo.firmwareVersion" class="flex items-center justify-between p-2 bg-elevated rounded-lg">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-cpu" class="w-4 h-4 text-secondary" />
-            <span class="text-sm font-medium">固件版本</span>
+            <span class="text-sm font-medium">{{ t('ui.me5b17aa7b4') }}</span>
           </div>
           <span class="text-xs text-muted truncate max-w-32">{{ printerInfo.firmwareVersion }}</span>
         </div>
@@ -88,7 +88,7 @@
         <div v-if="printerInfo.markerNames && printerInfo.markerNames.length > 0">
           <div class="flex items-center gap-2 mb-2">
             <UIcon name="i-lucide-droplets" class="w-4 h-4 text-primary" />
-            <span class="text-sm font-semibold">墨盒信息</span>
+            <span class="text-sm font-semibold">{{ t('ui.m4be93258b4') }}</span>
           </div>
           <div class="space-y-2">
             <div v-for="(name, i) in printerInfo.markerNames" :key="i" class="space-y-1">
@@ -113,7 +113,7 @@
         <div v-if="printerInfo.mediaReady && printerInfo.mediaReady.length > 0">
           <div class="flex items-center gap-2 mb-2">
             <UIcon name="i-lucide-layers" class="w-4 h-4 text-secondary" />
-            <span class="text-sm font-semibold">纸盒信息</span>
+            <span class="text-sm font-semibold">{{ t('ui.m7722cff52e') }}</span>
           </div>
           <div class="space-y-1">
             <div v-for="(media, i) in printerInfo.mediaReady" :key="i"
@@ -128,7 +128,7 @@
         <div v-if="printerInfo.stateReasons && printerInfo.stateReasons.filter(r => r !== 'none').length > 0">
           <div class="flex items-center gap-2 mb-1">
             <UIcon name="i-lucide-alert-triangle" class="w-4 h-4 text-warning" />
-            <span class="text-sm font-semibold">警报</span>
+            <span class="text-sm font-semibold">{{ t('ui.m3ae491fed8') }}</span>
           </div>
           <div class="space-y-1">
             <div v-for="reason in printerInfo.stateReasons.filter(r => r !== 'none')" :key="reason"
@@ -144,6 +144,8 @@
 </template>
 
 <script setup>
+import { t } from '../../i18n.js'
+
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { formatDurationSeconds, printerStateColor, printerStateText, markerLevelColor, markerBarColor } from '../../utils/format'
 

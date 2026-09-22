@@ -6,14 +6,14 @@
       <div class="lg:col-span-2 flex items-center gap-2 sm:gap-3 min-w-0">
         <h1 class="text-lg font-bold flex items-center gap-2 shrink-0">
           <UIcon name="i-lucide-printer" class="w-5 h-5 text-primary" />
-          打印
+          {{ t('ui.md7bfe7b505') }}
         </h1>
         <USelect
           :model-value="printer"
           :items="printerItems"
           value-key="value"
           label-key="label"
-          placeholder="选择打印机"
+          :placeholder="t('ui.md97891fc1e')"
           icon="i-lucide-printer"
           class="flex-1 min-w-0"
           @update:model-value="onPrinterSelect"
@@ -25,9 +25,9 @@
           icon="i-lucide-list-todo"
           class="shrink-0 lg:hidden"
           @click="openJobsModal"
-          title="CUPS 任务"
+          :title="t('ui.m7845ad361f')"
         />
-        <UButton
+        <UButton :aria-label="t('accessibility.refresh')"
           variant="ghost"
           size="xs"
           icon="i-lucide-refresh-cw"
@@ -43,14 +43,14 @@
           size="xs"
           icon="i-lucide-list-todo"
           @click="openJobsModal"
-        >CUPS 任务</UButton>
+        >{{ t('ui.m7845ad361f') }}</UButton>
         <UButton
           variant="ghost"
           size="xs"
           icon="i-lucide-refresh-cw"
           @click="refreshAll"
           :loading="refreshing"
-        >刷新</UButton>
+        >{{ t('ui.maee8874341') }}</UButton>
       </div>
     </div>
 
@@ -114,7 +114,7 @@
               <input ref="invoiceInput" type="file" class="hidden" multiple @change="onInvoiceFileChange" />
               <div class="flex items-center justify-center gap-2 text-sm text-muted py-1">
                 <UIcon name="i-lucide-receipt" class="w-5 h-5" />
-                <span>上传发票文件（支持多选，PDF / 图片 / OFD）</span>
+                <span>{{ t('ui.mc64beb02b0') }}</span>
               </div>
             </div>
             <div v-if="invoiceFiles.length > 0" class="space-y-1">
@@ -122,7 +122,7 @@
                 <UIcon name="i-lucide-file" class="w-4 h-4 text-muted shrink-0" />
                 <span class="flex-1 truncate">{{ f.name }}</span>
                 <span class="text-xs text-muted shrink-0">{{ formatFileSize(f.size) }}</span>
-                <UButton variant="ghost" size="xs" color="error" icon="i-lucide-x" class="shrink-0" @click="removeInvoiceFile(idx)" />
+                <UButton :aria-label="t('accessibility.remove')" variant="ghost" size="xs" color="error" icon="i-lucide-x" class="shrink-0" @click="removeInvoiceFile(idx)" />
               </div>
             </div>
             <UButton
@@ -133,7 +133,7 @@
               :loading="composing"
               :disabled="composing"
               @click="composeAndPreview"
-            >合并预览 ({{ invoiceFiles.length }} 个文件)</UButton>
+            >{{ t('ui.mf5146fb056') }}{{ invoiceFiles.length }} {{ t('ui.m9218efa264') }}</UButton>
           </div>
         </UCard>
 
@@ -148,7 +148,7 @@
           @update:back="onIdCardBack"
         />
         <div v-if="printMode === 'id_card'" class="flex items-center gap-3">
-          <span class="text-sm text-muted shrink-0">版面</span>
+          <span class="text-sm text-muted shrink-0">{{ t('ui.m2dd2abd8ce') }}</span>
           <div class="flex rounded-lg border border-muted overflow-hidden">
             <label
               v-for="p in ['A4', 'A5']"
@@ -169,7 +169,7 @@
           :loading="composing"
           :disabled="composing"
           @click="composeAndPreview"
-        >合并预览</UButton>
+        >{{ t('ui.m0efa18ae9d') }}</UButton>
 
         <!-- 文字速印(issue #70):粘贴文字直接打,不必先建 .txt 上传 -->
         <UCard v-if="printMode === 'text'" :ui="{ body: 'p-3 sm:p-4' }">
@@ -177,12 +177,12 @@
             <UTextarea
               v-model="quickText"
               :rows="10"
-              placeholder="在此粘贴要打印的文字…"
+              :placeholder="t('ui.m293b601aa6')"
               class="w-full"
               :disabled="converting || printing"
             />
             <div class="flex items-center justify-between gap-2 text-xs text-muted">
-              <span>{{ quickText.length }} 字符</span>
+              <span>{{ quickText.length }} {{ t('ui.m25dcebd656') }}</span>
               <UButton
                 v-if="quickText"
                 variant="ghost"
@@ -190,7 +190,7 @@
                 icon="i-lucide-x"
                 :disabled="converting || printing"
                 @click="quickText = ''"
-              >清空</UButton>
+              >{{ t('ui.m1ef3de06b3') }}</UButton>
             </div>
             <UButton
               variant="outline"
@@ -199,7 +199,7 @@
               :loading="converting"
               :disabled="!quickText.trim() || converting || printing"
               @click="convertQuickText"
-            >转换预览</UButton>
+            >{{ t('ui.meae5bfa97b') }}</UButton>
           </div>
         </UCard>
 
@@ -209,14 +209,14 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 font-semibold">
                 <UIcon name="i-lucide-images" class="w-5 h-5" />
-                已选图片 ({{ selectedImages.length }})
+                {{ t('ui.m9b8719efb9') }}{{ selectedImages.length }})
               </div>
-              <UButton variant="ghost" size="xs" color="error" icon="i-lucide-trash-2" @click="clearFile">清空全部</UButton>
+              <UButton variant="ghost" size="xs" color="error" icon="i-lucide-trash-2" @click="clearFile">{{ t('ui.m1b59091409') }}</UButton>
             </div>
           </template>
           <!-- 每页张数(issue #37):类 WinXP 打印图片向导,把多图排到同一页 -->
           <div class="flex items-center gap-2 mb-2 text-sm">
-            <span class="text-muted shrink-0">每页张数</span>
+            <span class="text-muted shrink-0">{{ t('ui.mad1d572da5') }}</span>
             <div class="flex rounded-lg border border-muted overflow-hidden">
               <label
                 v-for="n in [1, 2, 4, 6, 9]"
@@ -233,11 +233,11 @@
             <div v-for="(img, idx) in selectedImages" :key="idx" class="relative group rounded-lg overflow-hidden border border-default">
               <img :src="imageThumbnails[idx]" class="w-full h-20 object-cover" :style="imageRotations[idx] ? `transform: rotate(${imageRotations[idx]}deg)` : ''" />
               <div class="absolute top-1 right-1 flex gap-1">
-                <UButton variant="solid" size="xs" color="primary" icon="i-lucide-rotate-ccw" title="左旋90°" @click="rotateImage(idx, -90)" />
-                <UButton variant="solid" size="xs" color="primary" icon="i-lucide-rotate-cw" title="右旋90°" @click="rotateImage(idx, 90)" />
+                <UButton variant="solid" size="xs" color="primary" icon="i-lucide-rotate-ccw" :title="t('ui.m9c7a64ae9a')" @click="rotateImage(idx, -90)" />
+                <UButton variant="solid" size="xs" color="primary" icon="i-lucide-rotate-cw" :title="t('ui.mb1ce560ec3')" @click="rotateImage(idx, 90)" />
               </div>
               <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <UButton variant="solid" size="xs" color="error" icon="i-lucide-x" @click="removeImage(idx)" />
+                <UButton :aria-label="t('accessibility.remove')" variant="solid" size="xs" color="error" icon="i-lucide-x" @click="removeImage(idx)" />
               </div>
               <p class="text-xs truncate px-1 py-0.5">{{ img.name }}<span v-if="imageRotations[idx]" class="text-muted"> · {{ imageRotations[idx] }}°</span></p>
             </div>
@@ -313,7 +313,7 @@
           <div class="flex items-center justify-between gap-2">
             <h3 class="text-lg font-semibold flex items-center gap-2">
               <UIcon name="i-lucide-list-todo" class="w-5 h-5 text-primary" />
-              CUPS 任务
+              {{ t('ui.m7845ad361f') }}
             </h3>
             <div class="flex items-center gap-2">
               <UButton
@@ -322,12 +322,12 @@
                 icon="i-lucide-refresh-cw"
                 :loading="loadingJobs"
                 @click="loadJobs(true)"
-              >刷新</UButton>
-              <UButton variant="ghost" size="xs" icon="i-lucide-x" @click="showJobsModal = false" />
+              >{{ t('ui.maee8874341') }}</UButton>
+              <UButton :aria-label="t('accessibility.close')" variant="ghost" size="xs" icon="i-lucide-x" @click="showJobsModal = false" />
             </div>
           </div>
           <p class="text-xs text-muted">
-            列出 CUPS 队列中所有未完成的任务；每 5 秒自动刷新。可取消卡在 processing / stopped 的任务。
+            {{ t('ui.md93d0e908c') }}
           </p>
 
           <div v-if="jobsError" class="text-sm text-error break-all">
@@ -335,21 +335,21 @@
           </div>
 
           <div v-if="loadingJobs && !cupsJobs.length" class="py-8 text-center text-sm text-muted">
-            加载中…
+            {{ t('ui.m4927a53bcc') }}
           </div>
           <div v-else-if="!cupsJobs.length" class="py-8 text-center text-sm text-muted">
-            当前没有未完成的任务。
+            {{ t('ui.mabc7012851') }}
           </div>
           <div v-else class="overflow-x-auto -mx-2 sm:mx-0">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs text-muted border-b border-muted">
                   <th class="py-2 px-2">ID</th>
-                  <th class="py-2 px-2">打印机</th>
-                  <th class="py-2 px-2">文件</th>
-                  <th class="py-2 px-2">用户</th>
-                  <th class="py-2 px-2">状态</th>
-                  <th class="py-2 px-2 text-right">操作</th>
+                  <th class="py-2 px-2">{{ t('ui.m7d6376ef9f') }}</th>
+                  <th class="py-2 px-2">{{ t('ui.m39932f24fe') }}</th>
+                  <th class="py-2 px-2">{{ t('ui.m0d0e1a86b3') }}</th>
+                  <th class="py-2 px-2">{{ t('ui.m6320b4a872') }}</th>
+                  <th class="py-2 px-2 text-right">{{ t('ui.med31fbb483') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -367,7 +367,7 @@
                       {{ j.stateReasons.join(', ') }}
                     </div>
                     <div v-if="j.sheetsCompleted > 0" class="text-[10px] text-muted mt-0.5">
-                      已打印 {{ j.sheetsCompleted }} 页
+                      {{ t('ui.m59808ada86') }} {{ j.sheetsCompleted }} {{ t('ui.md24d3c9946') }}
                     </div>
                   </td>
                   <td class="py-2 px-2 text-right">
@@ -377,7 +377,7 @@
                       variant="soft"
                       :loading="cancelingJobId === j.id"
                       @click="cancelJob(j)"
-                    >取消</UButton>
+                    >{{ t('ui.m2cd0f3be87') }}</UButton>
                   </td>
                 </tr>
               </tbody>
@@ -390,6 +390,8 @@
 </template>
 
 <script setup>
+import { t } from '../i18n.js'
+
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { apiFetch, readError } from '../utils/api'
 import { isOfficeFile, isOFDFile } from '../utils/file'
@@ -460,10 +462,10 @@ const pageBorder = ref('none')
 // ─── 打印模式 ─────────────────────────────────────────────
 const printMode = ref(localStorage.getItem('print_mode') || 'standard')
 const printModeItems = [
-  { label: '标准打印', value: 'standard', icon: 'i-lucide-file-text' },
-  { label: '文字速印', value: 'text', icon: 'i-lucide-clipboard-type' },
-  { label: '发票打印', value: 'invoice', icon: 'i-lucide-receipt' },
-  { label: '身份证打印', value: 'id_card', icon: 'i-lucide-id-card' }
+  { get label() { return t('ui.m1da5210459') }, value: 'standard', icon: 'i-lucide-file-text' },
+  { get label() { return t('ui.m10a877716f') }, value: 'text', icon: 'i-lucide-clipboard-type' },
+  { get label() { return t('ui.medfe98e229') }, value: 'invoice', icon: 'i-lucide-receipt' },
+  { get label() { return t('ui.m458cf75798') }, value: 'id_card', icon: 'i-lucide-id-card' }
 ]
 // 文字速印(issue #70):用户直接粘贴一段文字就能打,省去先建 .txt 再上传的步骤。
 // 内容用 File 包装喂给现有 processFile 流程,后端已支持 fileKindText。
@@ -503,7 +505,7 @@ async function loadJobs(showLoading = false) {
       jobsError.value = await readError(resp)
     }
   } catch (e) {
-    jobsError.value = e?.message || '加载失败'
+    jobsError.value = e?.message || t('ui.md1d044826a')
   } finally {
     loadingJobs.value = false
   }
@@ -532,14 +534,14 @@ async function cancelJob(job) {
       body: JSON.stringify({ printerUri: job.printerUri, jobId: job.id }),
     }, () => emit('logout'))
     if (resp.ok) {
-      toast.add({ title: `已取消任务 #${job.id}`, color: 'success' })
+      toast.add({ title: t('ui.m9f53a3f839', { p0: (job.id) }), color: 'success' })
       await loadJobs(false)
     } else if (resp.status !== 401) {
       const msg = await readError(resp)
-      toast.add({ title: '取消失败', description: msg, color: 'error' })
+      toast.add({ title: t('ui.m2a5d88777b'), description: msg, color: 'error' })
     }
   } catch (e) {
-    toast.add({ title: '取消失败', description: e.message, color: 'error' })
+    toast.add({ title: t('ui.m2a5d88777b'), description: e.message, color: 'error' })
   } finally {
     cancelingJobId.value = 0
   }
@@ -581,8 +583,8 @@ const paperDimensionsMap = {
 
 // ─── 选项列表（供 PrintOptions 内部的 paperSizeLabel 等计算使用） ──
 const orientationItems = [
-  { label: '纵向', value: 'portrait' },
-  { label: '横向', value: 'landscape' }
+  { get label() { return t('ui.m8d48cd5dd4') }, value: 'portrait' },
+  { get label() { return t('ui.md95352f4e0') }, value: 'landscape' }
 ]
 const paperSizeItems = [
   { label: 'A5 (148×210mm)', value: 'A5' },
@@ -590,11 +592,11 @@ const paperSizeItems = [
   { label: 'A3 (297×420mm)', value: 'A3' },
   { label: 'A2 (420×594mm)', value: 'A2' },
   { label: 'A1 (594×841mm)', value: 'A1' },
-  { label: '5寸 (89×127mm)', value: '5inch' },
-  { label: '6寸 (102×152mm)', value: '6inch' },
-  { label: '7寸 (127×178mm)', value: '7inch' },
-  { label: '8寸 (152×203mm)', value: '8inch' },
-  { label: '10寸 (203×254mm)', value: '10inch' },
+  { get label() { return t('ui.mb8abfc1620') }, value: '5inch' },
+  { get label() { return t('ui.me6af69a8b8') }, value: '6inch' },
+  { get label() { return t('ui.macead90376') }, value: '7inch' },
+  { get label() { return t('ui.m2fdd6b5a8a') }, value: '8inch' },
+  { get label() { return t('ui.mf0f85103e8') }, value: '10inch' },
   { label: 'Letter (8.5×11in)', value: 'Letter' },
   { label: 'Legal (8.5×14in)', value: 'Legal' }
 ]
@@ -622,9 +624,9 @@ const canPrint = computed(() => {
 
 const printButtonLabel = computed(() => {
   if (printMode.value === 'standard') {
-    return batchFiles.value.length > 0 ? `批量打印 (${batchFiles.value.length} 个文件)` : '开始打印'
+    return batchFiles.value.length > 0 ? t('ui.ma1ec1b695d', { p0: (batchFiles.value.length) }) : t('ui.meec0b6fbff')
   }
-  return '开始打印'
+  return t('ui.meec0b6fbff')
 })
 
 // 打印机下拉选项：
@@ -653,7 +655,7 @@ const paperSizeLabel = computed(() => {
 
 const orientationLabel = computed(() => {
   const item = orientationItems.find(i => i.value === orientation.value)
-  return item?.label || (orientation.value === 'portrait' ? '纵向' : '横向')
+  return item?.label || (orientation.value === 'portrait' ? t('ui.m8d48cd5dd4') : t('ui.md95352f4e0'))
 })
 
 const paperDimText = computed(() => {
@@ -738,7 +740,7 @@ function processFile(f) {
     if (isHeicImage(f)) {
       // HEIC/HEIF 浏览器无法原生解码，先提示"正在转换"，异步用 heic2any 转成 JPEG 再预览
       previewType.value = 'text'
-      textPreview.value = '正在解码 HEIC/HEIF 图片，请稍候…'
+      textPreview.value = t('ui.m4b66381184')
       const originalFile = f
       heicBlobToJpegBlob(originalFile)
         .then(jpegFile => {
@@ -754,8 +756,8 @@ function processFile(f) {
         .catch(err => {
           if (selectedFile.value !== originalFile) return
           previewType.value = 'text'
-          textPreview.value = `HEIC 解码失败：${err.message || '未知错误'}`
-          toast.add({ title: 'HEIC 解码失败', description: err.message, color: 'error', icon: 'i-lucide-x-circle' })
+          textPreview.value = t('ui.m5f4cc3ff8b', { p0: (err.message || t('extra.unknown_error')) })
+          toast.add({ title: t('ui.m963f385292'), description: err.message, color: 'error', icon: 'i-lucide-x-circle' })
         })
     } else {
       previewUrl.value = URL.createObjectURL(f)
@@ -763,10 +765,10 @@ function processFile(f) {
     }
   } else if (isOfficeFile(f)) {
     previewType.value = 'text'
-    textPreview.value = 'Office 文档（无法直接预览）。点击"转换为 PDF"生成预览。'
+    textPreview.value = t('ui.m9e415cfe32')
   } else if (isOFDFile(f)) {
     previewType.value = 'text'
-    textPreview.value = 'OFD文件（开放版式文档）无法直接预览。点击"转换为PDF"生成预览。'
+    textPreview.value = t('ui.m181f697789')
   } else if (f.type.startsWith('text/') || /\.(txt|md|html)$/i.test(f.name)) {
     const reader = new FileReader()
     reader.onload = () => {
@@ -776,7 +778,7 @@ function processFile(f) {
     reader.readAsText(f)
   } else {
     previewType.value = 'text'
-    textPreview.value = '无法预览此文件类型，可直接提交打印。'
+    textPreview.value = t('ui.m5e0f53813e')
   }
 }
 
@@ -796,7 +798,7 @@ async function heicBlobToJpegBlob(file) {
     const mod = await import('heic2any')
     heic2any = mod.default || mod
   } catch (e) {
-    throw new Error('加载 HEIC 解码器失败，请检查网络后重试')
+    throw new Error(t('ui.medb2ae8cbe'))
   }
   try {
     const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
@@ -806,7 +808,7 @@ async function heicBlobToJpegBlob(file) {
     const jpegName = file.name.replace(/\.(heic|heif)$/i, '') + '.jpg'
     return new File([blob], jpegName, { type: 'image/jpeg', lastModified: Date.now() })
   } catch (e) {
-    throw new Error(`HEIC 解码失败：${file.name}（文件可能已损坏或非标准 HEIC 格式）`)
+    throw new Error(t('ui.m9c46fe0de6', { p0: (file.name) }))
   }
 }
 
@@ -833,8 +835,8 @@ function processMultipleImages(files) {
   const arr = Array.from(files)
   selectedImages.value = arr
   imageRotations.value = arr.map(() => 0)
-  fileDisplayName.value = `${arr.length}张图片`
-  downloadName.value = '合并图片.pdf'
+  fileDisplayName.value = t('ui.m3086b71dbe', { p0: (arr.length) })
+  downloadName.value = t('ui.m778fd2eda2')
   converted.value = false
 
   // HEIC 无法直接生成缩略图，先用占位图，再异步转码后替换
@@ -847,7 +849,7 @@ function processMultipleImages(files) {
     previewType.value = 'image'
   } else {
     previewType.value = 'text'
-    textPreview.value = '正在解码 HEIC/HEIF 图片，请稍候…'
+    textPreview.value = t('ui.m4b66381184')
   }
 
   if (hasHeic) {
@@ -873,7 +875,7 @@ function processMultipleImages(files) {
         .catch(err => {
           if (selectedImages.value !== heicBatch) return
           toast.add({
-            title: `HEIC 解码失败：${f.name}`,
+            title: t('ui.m5f4cc3ff8b', { p0: (f.name) }),
             description: err.message,
             color: 'error',
             icon: 'i-lucide-x-circle'
@@ -899,7 +901,7 @@ function removeImage(idx) {
   } else if (selectedImages.value.length === 0) {
     clearFile()
   } else {
-    fileDisplayName.value = `${selectedImages.value.length}张图片`
+    fileDisplayName.value = t('ui.m3086b71dbe', { p0: (selectedImages.value.length) })
     // 更新预览为第一张（不调用 clearPreviewUrl，因为旧 previewUrl 与 imageThumbnails 共享同一 URL）
     previewUrl.value = imageThumbnails.value[0]
     converted.value = false
@@ -910,13 +912,13 @@ function removeImage(idx) {
 function processBatchFiles(files) {
   clearFile()
   batchFiles.value = Array.from(files)
-  fileDisplayName.value = `${batchFiles.value.length} 个文件（批量打印）`
+  fileDisplayName.value = t('ui.m31a983caec', { p0: (batchFiles.value.length) })
   previewType.value = 'text'
-  textPreview.value = `已选择 ${batchFiles.value.length} 个文件，点击"开始打印"将逐个打印。`
+  textPreview.value = t('ui.mf606576e7c', { p0: (batchFiles.value.length) })
 }
 
 async function uploadAndPrintBatch() {
-  if (!printer.value) { toast.add({ title: '请选择打印机', color: 'warning' }); return }
+  if (!printer.value) { toast.add({ title: t('ui.me0308fd243'), color: 'warning' }); return }
   if (batchFiles.value.length === 0) return
 
   batchPrinting.value = true
@@ -971,14 +973,14 @@ async function uploadAndPrintBatch() {
       successCount++
     } catch (e) {
       failCount++
-      toast.add({ title: `打印失败：${file.name}`, description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+      toast.add({ title: t('ui.m11fa8993d1', { p0: (file.name) }), description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
     }
   }
 
   if (successCount > 0) {
     toast.add({
-      title: '批量打印完成',
-      description: `成功 ${successCount} 个${failCount > 0 ? `，失败 ${failCount} 个` : ''}`,
+      title: t('ui.m8117b1bc64'),
+      description: t('ui.m1033f4f241', { p0: (successCount), p1: (failCount > 0 ? t('extra.failed_count', { count: failCount }) : '') }),
       color: failCount > 0 ? 'warning' : 'success',
       icon: failCount > 0 ? 'i-lucide-alert-triangle' : 'i-lucide-check-circle'
     })
@@ -1054,7 +1056,7 @@ async function convertToPdf() {
     let blob
     if (isMultiImage.value) {
       blob = await convertImagesToPdfViaServer(
-        selectedImages.value, orientation.value, paperSize.value, downloadName.value || '合并图片.pdf',
+        selectedImages.value, orientation.value, paperSize.value, downloadName.value || t('ui.m778fd2eda2'),
         imageRotations.value, invert.value
       )
     } else if (isOfficeFile(f) || isOFDFile(f)) {
@@ -1069,9 +1071,9 @@ async function convertToPdf() {
     previewUrl.value = URL.createObjectURL(blob)
     previewType.value = 'pdf'
     converted.value = true
-    toast.add({ title: '转换成功', color: 'success', icon: 'i-lucide-check-circle' })
+    toast.add({ title: t('ui.ma54c4b48e3'), color: 'success', icon: 'i-lucide-check-circle' })
   } catch (e) {
-    toast.add({ title: '转换失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.m0567fe6493'), description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     converting.value = false
   }
@@ -1101,9 +1103,9 @@ async function applyGsNormalization() {
     textPreview.value = ''
     pdfBlob.value = blob
     gsApplied.value = true
-    toast.add({ title: '已应用 GS 规范化', color: 'success', icon: 'i-lucide-check-circle' })
+    toast.add({ title: t('ui.mc3291ebcda'), color: 'success', icon: 'i-lucide-check-circle' })
   } catch (e) {
-    toast.add({ title: '应用 GS 失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.m42994a9444'), description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     gsApplying.value = false
   }
@@ -1111,7 +1113,7 @@ async function applyGsNormalization() {
 
 // ─── 打印 ─────────────────────────────────────────────────
 async function uploadAndPrint() {
-  if (!printer.value) { toast.add({ title: '请选择打印机', color: 'warning' }); return }
+  if (!printer.value) { toast.add({ title: t('ui.me0308fd243'), color: 'warning' }); return }
 
   // 批量打印模式
   if (batchFiles.value.length > 0) {
@@ -1120,7 +1122,7 @@ async function uploadAndPrint() {
   }
 
   const fileToSend = pdfBlob.value || selectedFile.value
-  if (!fileToSend && !isMultiImage.value) { toast.add({ title: '请先选择文件', color: 'warning' }); return }
+  if (!fileToSend && !isMultiImage.value) { toast.add({ title: t('ui.mefa8075f67'), color: 'warning' }); return }
   // 多图片未转换时自动转换
   if (isMultiImage.value && !pdfBlob.value) {
     await convertToPdf()
@@ -1165,15 +1167,15 @@ async function uploadAndPrint() {
     }
     const j = await resp.json()
     toast.add({
-      title: '打印任务已提交',
-      description: `任务ID：${j.jobId || '—'}，共 ${j.pages} 页`,
+      title: t('ui.mbec6806e79'),
+      description: t('ui.m7d3ddabe38', { p0: (j.jobId || '—'), p1: (j.pages) }),
       color: 'success',
       icon: 'i-lucide-check-circle'
     })
     localStorage.setItem('last_printer', printer.value)
     await loadPrintRecords()
   } catch (e) {
-    toast.add({ title: '打印失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.m36409e9d47'), description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     printing.value = false
   }
@@ -1193,7 +1195,7 @@ async function loadPrintRecords(silent = false) {
       }))
     }
   } catch (e) {
-    console.error('加载打印记录失败', e)
+    console.error(t('ui.mb66a5e2cd0'), e)
   } finally {
     loadingRecords.value = false
   }
@@ -1229,14 +1231,14 @@ async function handleReprint(payload) {
     }
     const j = await resp.json()
     toast.add({
-      title: '重新打印已提交',
-      description: `${j.pages} 页，任务ID：${j.jobId || '—'}`,
+      title: t('ui.me39f530a4f'),
+      description: t('ui.m65aab65356', { p0: (j.pages), p1: (j.jobId || '—') }),
       color: 'success',
       icon: 'i-lucide-check-circle'
     })
     await loadPrintRecords()
   } catch (e) {
-    toast.add({ title: '重新打印失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.m129fb70e12'), description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     recordListRef.value?.clearReprintLoading()
   }
@@ -1264,7 +1266,7 @@ async function loadPrinterInfo(silent = false) {
       printerInfoError.value = await readError(resp)
     }
   } catch (_) {
-    printerInfoError.value = '无法连接到打印机'
+    printerInfoError.value = t('ui.m417547c309')
   } finally {
     loadingPrinterInfo.value = false
   }
@@ -1284,7 +1286,7 @@ async function loadPrinters(silent = false) {
     const resp = await apiFetch('/api/printers', {}, () => emit('logout'))
     if (!resp.ok) {
       if (!silent && resp.status !== 401) {
-        toast.add({ title: '加载打印机失败', description: await readError(resp), color: 'error' })
+        toast.add({ title: t('ui.m219ce07543'), description: await readError(resp), color: 'error' })
       }
       return
     }
@@ -1308,7 +1310,7 @@ async function loadPrinters(silent = false) {
     }
   } catch (e) {
     if (!silent) {
-      toast.add({ title: '加载打印机失败', description: e.message, color: 'error' })
+      toast.add({ title: t('ui.m219ce07543'), description: e.message, color: 'error' })
     }
   }
 }
@@ -1452,10 +1454,10 @@ async function composeAndPreview() {
     previewUrl.value = URL.createObjectURL(blob)
     previewType.value = 'pdf'
     converted.value = true
-    downloadName.value = printMode.value === 'invoice' ? '发票合并.pdf' : '身份证.pdf'
-    toast.add({ title: '合并成功', color: 'success', icon: 'i-lucide-check-circle' })
+    downloadName.value = printMode.value === 'invoice' ? t('ui.m8534d0a58c') : t('ui.m776d3ee493')
+    toast.add({ title: t('ui.m9f4e6eb58a'), color: 'success', icon: 'i-lucide-check-circle' })
   } catch (e) {
-    toast.add({ title: '合并失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.ma838038bc5'), description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     composing.value = false
   }

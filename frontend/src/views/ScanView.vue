@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <h1 class="text-lg font-bold flex items-center gap-2">
         <UIcon name="i-lucide-scan-line" class="w-5 h-5 text-primary" />
-        扫描
+        {{ t('ui.mc2a291b64f') }}
       </h1>
       <div class="flex items-center gap-2">
         <UButton
@@ -12,7 +12,7 @@
           icon="i-lucide-refresh-cw"
           :loading="loadingDevices"
           @click="loadDevices(true)"
-        >刷新设备</UButton>
+        >{{ t('ui.mdc54091453') }}</UButton>
       </div>
     </div>
 
@@ -20,67 +20,67 @@
       color="neutral"
       variant="soft"
       icon="i-lucide-info"
-      title="使用说明"
-      description="AIO 镜像自带 scanimage 与多种 SANE 后端。zeroconf 类零配置后端(如 hpljm1005: / escl:)通常可直接工作;同一台设备若同时列出 hpaio: 与 hpljm1005:,优先选后者。选中设备后系统会做一次快速可用性探测,若打开失败请换其它后端再试。PDF 会先扫成 PNG,再用 Ghostscript 合成。"
+      :title="t('ui.mcb4ba40bf8')"
+      :description="t('ui.m2535f49a58')"
     />
 
     <UCard>
       <template #header>
         <div class="flex items-center gap-2 text-sm font-medium">
           <UIcon name="i-lucide-settings-2" class="w-4 h-4" />
-          扫描参数
+          {{ t('ui.m055681408f') }}
         </div>
       </template>
       <div class="space-y-3">
-        <UFormField label="设备" required>
+        <UFormField :label="t('ui.me1506406a5')" required>
           <div class="flex gap-2">
             <USelect
               v-model="form.device"
               :items="deviceItems"
               value-key="value"
               label-key="label"
-              placeholder="请先刷新设备列表"
+              :placeholder="t('ui.m7d92726092')"
               class="flex-1"
               icon="i-lucide-scanner"
             />
           </div>
           <template #hint>
             <span v-if="!devices.length && !loadingDevices" class="text-warning">
-              未检测到设备。请确认扫描仪已开机、USB 已连接,或宿主机已挂 --device=/dev/bus/usb。
+              {{ t('ui.m4c56c7fe67') }}
             </span>
-            <span v-else-if="loadingDevices">检测中…</span>
+            <span v-else-if="loadingDevices">{{ t('ui.m3a1abf3422') }}</span>
             <span v-else-if="currentProbe?.state === 'probing'" class="text-muted">
-              正在探测该后端是否可打开…
+              {{ t('ui.m22a50af743') }}
             </span>
             <span v-else-if="currentProbe?.state === 'healthy'" class="text-success">
-              ✓ 该后端可打开
+              {{ t('ui.mdc00215edb') }}
             </span>
             <span v-else-if="currentProbe?.state === 'unhealthy'" class="text-error">
-              该后端无法打开{{ currentProbe.detail ? ':' + currentProbe.detail : '' }}。请换其它后端(如 hpljm1005: / escl:)再试。
+              {{ t('ui.me23d962ce9') }}{{ currentProbe.detail ? ':' + currentProbe.detail : '' }}{{ t('ui.m4e16b387eb') }}
             </span>
           </template>
         </UFormField>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <UFormField label="模式">
+          <UFormField :label="t('ui.m47a270081a')">
             <USelect v-model="form.mode" :items="modeItems" value-key="value" label-key="label" />
           </UFormField>
-          <UFormField label="分辨率(dpi)">
+          <UFormField :label="t('ui.m2283579a5d')">
             <USelect v-model="form.resolution" :items="resolutionItems" value-key="value" label-key="label" />
           </UFormField>
-          <UFormField label="输出格式">
+          <UFormField :label="t('ui.m41d0e52f0a')">
             <USelect v-model="form.format" :items="formatItems" value-key="value" label-key="label" />
           </UFormField>
         </div>
 
-        <UFormField v-if="sourceItems.length > 1" label="来源">
+        <UFormField v-if="sourceItems.length > 1" :label="t('ui.ma488e93d69')">
           <USelect v-model="form.source" :items="sourceItems" value-key="value" label-key="label" />
-          <template #hint>MVP 单页扫描,ADF/双面暂未支持</template>
+          <template #hint>{{ t('ui.m2ceae7e922') }}</template>
         </UFormField>
 
-        <UFormField label="文件名(可选)">
-          <UInput v-model="form.filename" placeholder="scan(留空自动生成)" />
-          <template #hint>最终为 <code>&lt;文件名&gt;-&lt;时间戳&gt;.&lt;扩展名&gt;</code>,以避免覆盖</template>
+        <UFormField :label="t('ui.mc7ec8f8f1a')">
+          <UInput v-model="form.filename" :placeholder="t('ui.m35ca3cbac0')" />
+          <template #hint>{{ t('ui.m9ba39807bf') }} <code>{{ t('ui.mb1de14f53b') }}</code>{{ t('ui.m4e7e9d4768') }}</template>
         </UFormField>
 
         <div class="flex justify-end gap-2 pt-2">
@@ -92,7 +92,7 @@
             :disabled="!form.device"
             @click="startScan"
           >
-            {{ currentJob?.status === 'running' ? '扫描中…' : '开始扫描' }}
+            {{ currentJob?.status === 'running' ? t('ui.m463fa583e0') : t('ui.m743497b67c') }}
           </UButton>
           <UButton
             v-if="currentJob?.status === 'running'"
@@ -101,7 +101,7 @@
             variant="ghost"
             icon="i-lucide-x"
             @click="cancelCurrentJob"
-          >取消</UButton>
+          >{{ t('ui.m2cd0f3be87') }}</UButton>
         </div>
       </div>
     </UCard>
@@ -114,7 +114,7 @@
             :name="jobStatusIcon(currentJob.status)"
             :class="['w-4 h-4', currentJob.status === 'running' ? 'animate-spin text-primary' : jobStatusColor(currentJob.status)]"
           />
-          <span class="text-sm font-medium">当前扫描任务</span>
+          <span class="text-sm font-medium">{{ t('ui.mf453c84455') }}</span>
           <UBadge :color="jobBadgeColor(currentJob.status)" variant="subtle" size="sm">
             {{ jobStatusLabel(currentJob.status) }}
           </UBadge>
@@ -123,12 +123,12 @@
       <div class="space-y-2">
         <div class="text-xs text-muted flex flex-wrap gap-x-4 gap-y-0.5">
           <span>ID:{{ currentJob.id }}</span>
-          <span>设备:{{ currentJob.device }}</span>
+          <span>{{ t('ui.m7711cd65a2') }}{{ currentJob.device }}</span>
           <span>{{ currentJob.mode }} / {{ currentJob.resolution }}dpi / {{ currentJob.format }}</span>
-          <span v-if="currentJob.filename">文件:{{ currentJob.filename }}</span>
-          <span v-if="currentJob.sizeBytes">大小:{{ formatSize(currentJob.sizeBytes) }}</span>
+          <span v-if="currentJob.filename">{{ t('ui.m0f015b17ff') }}{{ currentJob.filename }}</span>
+          <span v-if="currentJob.sizeBytes">{{ t('ui.m9b31336899') }}{{ formatSize(currentJob.sizeBytes) }}</span>
         </div>
-        <div v-if="currentJob.error" class="text-sm text-error">{{ currentJob.error }}</div>
+        <div v-if="currentJob.error" class="text-sm text-error">{{ translateError(currentJob.error) }}</div>
         <pre v-if="currentJob.log" class="text-xs bg-elevated/60 border border-default rounded p-2 max-h-48 overflow-auto whitespace-pre-wrap">{{ currentJob.log }}</pre>
       </div>
     </UCard>
@@ -137,18 +137,18 @@
     <div class="flex items-center justify-between gap-2 pt-2">
       <div class="text-sm font-medium flex items-center gap-2">
         <UIcon name="i-lucide-history" class="w-4 h-4" />
-        扫描历史
+        {{ t('ui.m25b3bd6d0e') }}
       </div>
-      <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" :loading="loadingRecords" @click="loadRecords">刷新</UButton>
+      <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" :loading="loadingRecords" @click="loadRecords">{{ t('ui.maee8874341') }}</UButton>
     </div>
 
     <div v-if="loadingRecords" class="flex items-center justify-center py-8 text-muted gap-2">
       <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-      加载中…
+      {{ t('ui.m4927a53bcc') }}
     </div>
     <div v-else-if="!records.length" class="text-center py-12 text-muted">
       <UIcon name="i-lucide-scan-line" class="w-10 h-10 mx-auto mb-2 opacity-40" />
-      <div>还没有扫描记录</div>
+      <div>{{ t('ui.m32deaf31c8') }}</div>
     </div>
     <div v-else class="space-y-2">
       <UCard v-for="rec in records" :key="rec.id" class="overflow-hidden">
@@ -166,7 +166,7 @@
               <span v-if="rec.sizeBytes">{{ formatSize(rec.sizeBytes) }}</span>
               <span>{{ formatTime(rec.createdAt) }}</span>
             </div>
-            <div v-if="rec.errMsg" class="text-xs text-error truncate">错误:{{ rec.errMsg }}</div>
+            <div v-if="rec.errMsg" class="text-xs text-error truncate">{{ t('ui.m867ea0e132') }}{{ translateError(rec.errMsg) }}</div>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <UButton
@@ -175,14 +175,14 @@
               variant="ghost"
               icon="i-lucide-download"
               @click="download(rec)"
-            >下载</UButton>
+            >{{ t('ui.m4673a23061') }}</UButton>
             <UButton
               size="xs"
               variant="ghost"
               color="error"
               icon="i-lucide-trash-2"
               @click="confirmDelete(rec)"
-            >删除</UButton>
+            >{{ t('ui.m2f9daa8289') }}</UButton>
           </div>
         </div>
       </UCard>
@@ -191,6 +191,8 @@
 </template>
 
 <script setup>
+import { t, translateError, formatLocale, formatNumber } from '../i18n.js'
+
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { apiFetch, readError } from '../utils/api'
 
@@ -218,25 +220,25 @@ const form = ref({
 })
 
 const modeItems = [
-  { value: 'Color', label: '彩色 (Color)' },
-  { value: 'Gray', label: '灰度 (Gray)' },
-  { value: 'Lineart', label: '黑白线稿 (Lineart)' }
+  { value: 'Color', get label() { return t('ui.mfc7c2bcf3c') } },
+  { value: 'Gray', get label() { return t('ui.mfb049c564e') } },
+  { value: 'Lineart', get label() { return t('ui.mecfbcf2da1') } }
 ]
 const resolutionItems = [
   { value: '75', label: '75 dpi' },
   { value: '100', label: '100 dpi' },
   { value: '150', label: '150 dpi' },
   { value: '200', label: '200 dpi' },
-  { value: '300', label: '300 dpi (推荐)' },
-  { value: '600', label: '600 dpi (高质量)' }
+  { value: '300', get label() { return t('ui.m7869e50760') } },
+  { value: '600', get label() { return t('ui.mf51caca0ce') } }
 ]
 const formatItems = [
-  { value: 'png', label: 'PNG(位图,无损)' },
-  { value: 'jpeg', label: 'JPEG(位图,较小)' },
-  { value: 'pdf', label: 'PDF(单页,Ghostscript 合成)' }
+  { value: 'png', get label() { return t('ui.m2fb38c381c') } },
+  { value: 'jpeg', get label() { return t('ui.m0e04a8b524') } },
+  { value: 'pdf', get label() { return t('ui.mae1cb21ab3') } }
 ]
 // 动态从 /api/scan/options 拉;后端返回不足时用默认单项 Flatbed 兜底。
-const sourceItems = ref([{ value: '', label: '(默认)' }])
+const sourceItems = ref([{ value: '', get label() { return t('ui.m0ef211c6e3') } }])
 
 const deviceItems = computed(() =>
   devices.value.map((d) => ({
@@ -257,18 +259,18 @@ function formatSize(bytes) {
   let n = bytes
   let i = 0
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++ }
-  return `${n.toFixed(1)} ${units[i]}`
+  return `${formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${units[i]}`
 }
 function formatTime(iso) {
   if (!iso) return '—'
-  try { return new Date(iso).toLocaleString() } catch { return iso }
+  try { return new Date(iso).toLocaleString(formatLocale()) } catch { return iso }
 }
 function jobStatusLabel(s) {
   return {
-    running: '扫描中',
-    succeeded: '已完成',
-    failed: '失败',
-    cancelled: '已取消'
+    running: t('ui.ma55df7a163'),
+    succeeded: t('ui.mf28461bb49'),
+    failed: t('ui.m28384d7afd'),
+    cancelled: t('ui.ma37778f17c')
   }[s] || s
 }
 function jobBadgeColor(s) {
@@ -314,7 +316,7 @@ async function loadDevices(force = false) {
       probeDevice(form.value.device)
     }
   } catch (e) {
-    toast.add({ title: '设备加载失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.m5ed1fae1af'), description: translateError(e.message), color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     loadingDevices.value = false
   }
@@ -349,7 +351,7 @@ async function probeDevice(device) {
   } catch (e) {
     deviceProbes.value = {
       ...deviceProbes.value,
-      [device]: { state: 'unhealthy', detail: e.message || '网络异常' }
+      [device]: { state: 'unhealthy', detail: e.message || t('ui.md536d47bd3') }
     }
   }
 }
@@ -366,7 +368,7 @@ async function loadOptions(device) {
       sourceItems.value = opts.source.values.map((v) => ({ value: v, label: v }))
       form.value.source = opts.source.default || opts.source.values[0]
     } else {
-      sourceItems.value = [{ value: '', label: '(默认)' }]
+      sourceItems.value = [{ value: '', get label() { return t('ui.m0ef211c6e3') } }]
       form.value.source = ''
     }
   } catch (e) {
@@ -382,14 +384,14 @@ async function loadRecords() {
     const data = await resp.json()
     records.value = data.records || []
   } catch (e) {
-    toast.add({ title: '记录加载失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.m63093ffd29'), description: translateError(e.message), color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     loadingRecords.value = false
   }
 }
 
 async function startScan() {
-  if (!form.value.device) { toast.add({ title: '请选择设备', color: 'warning' }); return }
+  if (!form.value.device) { toast.add({ title: t('ui.m534789b914'), color: 'warning' }); return }
   starting.value = true
   try {
     const resp = await apiFetch('/api/scan/jobs', {
@@ -419,9 +421,9 @@ async function startScan() {
       sizeBytes: 0
     }
     pollJob(data.jobId)
-    toast.add({ title: '扫描已开始', color: 'success', icon: 'i-lucide-check-circle' })
+    toast.add({ title: t('ui.m0c57016942'), color: 'success', icon: 'i-lucide-check-circle' })
   } catch (e) {
-    toast.add({ title: '扫描失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.mb1ca0741b0'), description: translateError(e.message), color: 'error', icon: 'i-lucide-x-circle' })
   } finally {
     starting.value = false
   }
@@ -463,9 +465,9 @@ async function cancelCurrentJob() {
   try {
     const resp = await apiFetch(`/api/scan/jobs/${currentJob.value.id}`, { method: 'DELETE' }, () => emit('logout'))
     if (!resp.ok) throw new Error(await readError(resp))
-    toast.add({ title: '已请求取消', color: 'warning' })
+    toast.add({ title: t('ui.m0a8b91a093'), color: 'warning' })
   } catch (e) {
-    toast.add({ title: '取消失败', description: e.message, color: 'error' })
+    toast.add({ title: t('ui.m2a5d88777b'), description: translateError(e.message), color: 'error' })
   }
 }
 
@@ -480,14 +482,14 @@ async function download(rec) {
 }
 
 async function confirmDelete(rec) {
-  if (!confirm(`确认删除扫描件「${rec.filename}」?文件与记录都会被清理,无法恢复。`)) return
+  if (!confirm(t('ui.m02fc97504c', { p0: (rec.filename) }))) return
   try {
     const resp = await apiFetch(`/api/scan/records/${rec.id}`, { method: 'DELETE' }, () => emit('logout'))
     if (!resp.ok) throw new Error(await readError(resp))
-    toast.add({ title: '已删除', color: 'success', icon: 'i-lucide-check-circle' })
+    toast.add({ title: t('ui.m077a6d3771'), color: 'success', icon: 'i-lucide-check-circle' })
     await loadRecords()
   } catch (e) {
-    toast.add({ title: '删除失败', description: e.message, color: 'error', icon: 'i-lucide-x-circle' })
+    toast.add({ title: t('ui.mc228558cf2'), description: translateError(e.message), color: 'error', icon: 'i-lucide-x-circle' })
   }
 }
 

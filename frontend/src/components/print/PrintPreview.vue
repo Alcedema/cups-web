@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-2 font-semibold">
           <UIcon name="i-lucide-eye" class="w-5 h-5" />
-          预览
+          {{ t('ui.m13d61fea9f') }}
           <!-- 纵向/横向快捷切换（取代移动端冗余尺寸文本） -->
           <div class="flex rounded-md border border-muted overflow-hidden ml-1">
             <button
@@ -51,15 +51,17 @@
       </div>
     </div>
     <div v-else class="py-6 text-center text-xs text-muted">
-      上传文件后显示预览
+      {{ t('ui.madf6019129') }}
     </div>
     <p v-if="pdfPreviewFailed && previewType === 'pdf'" class="mt-2 text-center text-xs text-muted">
-      PDF 预览加载失败，不影响打印，可直接点击"开始打印"。
+      {{ t('ui.mb804f256c1') }}
     </p>
   </UCard>
 </template>
 
 <script setup>
+import { t } from '../../i18n.js'
+
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import PdfCanvas from './PdfCanvas.vue'
 
@@ -97,8 +99,8 @@ const contentScaleStyle = computed(() =>
 defineEmits(['update:orientation'])
 
 const orientationItems = [
-  { label: '纵向', value: 'portrait', icon: 'i-lucide-rectangle-vertical' },
-  { label: '横向', value: 'landscape', icon: 'i-lucide-rectangle-horizontal' }
+  { get label() { return t('ui.m8d48cd5dd4') }, value: 'portrait', icon: 'i-lucide-rectangle-vertical' },
+  { get label() { return t('ui.md95352f4e0') }, value: 'landscape', icon: 'i-lucide-rectangle-horizontal' }
 ]
 
 const isMobile = ref(false)

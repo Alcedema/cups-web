@@ -336,8 +336,10 @@ func publicSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 	writeJSON(w, map[string]interface{}{
-		"customCss": customCSS,
-		"guestMode": guestMode != 0,
+		"customCss":          customCSS,
+		"guestMode":          guestMode != 0,
+		"defaultLanguage":    defaultLanguage,
+		"supportedLanguages": []string{"en", "zh-CN"},
 	})
 }
 

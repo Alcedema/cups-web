@@ -14,6 +14,7 @@ type User struct {
 	ContactName  string
 	Phone        string
 	Email        string
+	Language     string
 	CreatedAt    string
 	UpdatedAt    string
 }
@@ -49,7 +50,7 @@ func CountUsers(ctx context.Context, tx *sql.Tx) (int, error) {
 func GetUserByUsername(ctx context.Context, tx *sql.Tx, username string) (User, error) {
 	row := tx.QueryRowContext(ctx, `SELECT
 		id, username, password_hash, role, protected, contact_name, phone, email,
-		created_at, updated_at
+		created_at, updated_at, language
 		FROM users WHERE username = ?`, username)
 	return scanUser(row)
 }
@@ -57,7 +58,7 @@ func GetUserByUsername(ctx context.Context, tx *sql.Tx, username string) (User, 
 func GetUserByID(ctx context.Context, tx *sql.Tx, id int64) (User, error) {
 	row := tx.QueryRowContext(ctx, `SELECT
 		id, username, password_hash, role, protected, contact_name, phone, email,
-		created_at, updated_at
+		created_at, updated_at, language
 		FROM users WHERE id = ?`, id)
 	return scanUser(row)
 }
@@ -65,7 +66,7 @@ func GetUserByID(ctx context.Context, tx *sql.Tx, id int64) (User, error) {
 func ListUsers(ctx context.Context, tx *sql.Tx) ([]User, error) {
 	rows, err := tx.QueryContext(ctx, `SELECT
 		id, username, password_hash, role, protected, contact_name, phone, email,
-		created_at, updated_at
+		created_at, updated_at, language
 		FROM users ORDER BY id`)
 	if err != nil {
 		return nil, err
@@ -149,6 +150,7 @@ func scanUser(s scanner) (User, error) {
 	err := s.Scan(
 		&user.ID, &user.Username, &user.PasswordHash, &user.Role, &user.Protected, &user.ContactName, &user.Phone, &user.Email,
 		&user.CreatedAt, &user.UpdatedAt,
+		&user.Language,
 	)
 	return user, err
 }

@@ -4,15 +4,15 @@
       <div class="p-4 space-y-4">
         <h3 class="text-lg font-semibold flex items-center gap-2">
           <UIcon name="i-lucide-crop" class="w-5 h-5" />
-          裁剪身份证
+          {{ t('ui.m71cd345e9a') }}
         </h3>
         <div class="relative bg-elevated rounded-lg overflow-hidden" style="max-height: 60vh;">
           <img ref="imgRef" :src="imageUrl" class="max-w-full block" />
         </div>
         <div class="flex items-center gap-2">
           <div class="flex gap-1 shrink-0">
-            <UButton variant="outline" size="sm" icon="i-lucide-rotate-ccw" @click="rotateLeft">左旋</UButton>
-            <UButton variant="outline" size="sm" icon="i-lucide-rotate-cw" @click="rotateRight">右旋</UButton>
+            <UButton variant="outline" size="sm" icon="i-lucide-rotate-ccw" @click="rotateLeft">{{ t('ui.md2e5032f9a') }}</UButton>
+            <UButton variant="outline" size="sm" icon="i-lucide-rotate-cw" @click="rotateRight">{{ t('ui.mbf56d7fedf') }}</UButton>
           </div>
           <input
             type="range"
@@ -23,12 +23,12 @@
             class="flex-1 h-1.5 accent-[var(--ui-primary)]"
             @input="onFineRotate"
           />
-          <span class="text-xs text-muted tabular-nums w-12 text-right shrink-0">{{ fineAngle.toFixed(1) }}°</span>
-          <UButton v-if="fineAngle !== 0" variant="ghost" size="xs" icon="i-lucide-undo-2" @click="resetFine" />
+          <span class="text-xs text-muted tabular-nums w-12 text-right shrink-0">{{ formatNumber(fineAngle, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }}°</span>
+          <UButton :aria-label="t('accessibility.reset')" v-if="fineAngle !== 0" variant="ghost" size="xs" icon="i-lucide-undo-2" @click="resetFine" />
         </div>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="cancel">取消</UButton>
-          <UButton color="primary" icon="i-lucide-check" @click="confirm">确认裁剪</UButton>
+          <UButton variant="ghost" @click="cancel">{{ t('ui.m2cd0f3be87') }}</UButton>
+          <UButton color="primary" icon="i-lucide-check" @click="confirm">{{ t('ui.m798783f6ea') }}</UButton>
         </div>
       </div>
     </template>
@@ -36,6 +36,8 @@
 </template>
 
 <script setup>
+import { t, formatLocale, formatNumber } from '../../i18n.js'
+
 import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.min.css'
