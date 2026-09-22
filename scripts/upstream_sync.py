@@ -10,8 +10,15 @@ import urllib.parse
 import urllib.request
 
 def git(*args, cwd=None, check=True):
-    return subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', *args], cwd=cwd,
-                          check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', '-c', 'credential.helper=', *args], cwd=cwd,
+                            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if check and result.returncode:
+        detail = result.stderr
+        for name in ('UPSTREAM_SYNC_TOKEN', 'CI_JOB_TOKEN'):
+            secret = os.environ.get(name)
+            if secret: detail = detail.replace(secret, '[REDACTED]')
+        raise RuntimeError('Git operation failed: ' + detail)
+    return result
 
 def integrate(repo, base, release, target):
     """Return conflicts without moving any existing branch, especially main."""

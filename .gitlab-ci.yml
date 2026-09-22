@@ -45,13 +45,13 @@ backend:
 sync-tests:
   extends: .candidate
   stage: verify
-  image: python:3.13.7-bookworm
+  image: python:3.13.7-bookworm@sha256:c900d35aba5fe4c1dc1cd358408baae2902ff2a2926a1d15cc5002c6061ddb2e
   script:
     - python scripts/test_upstream_sync.py
 
 release:
   stage: release
-  image: python:3.13.7-bookworm
+  image: python:3.13.7-bookworm@sha256:c900d35aba5fe4c1dc1cd358408baae2902ff2a2926a1d15cc5002c6061ddb2e
   needs: [backend]
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+-alcedema\.[0-9]+$/'
@@ -60,7 +60,7 @@ release:
 
 upstream-sync:
   stage: sync
-  image: python:3.13.7-bookworm
+  image: python:3.13.7-bookworm@sha256:c900d35aba5fe4c1dc1cd358408baae2902ff2a2926a1d15cc5002c6061ddb2e
   resource_group: upstream-sync
   environment:
     name: upstream-sync
