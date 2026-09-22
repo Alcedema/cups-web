@@ -76,8 +76,13 @@ def main():
         askpass.chmod(0o700)
         os.environ['GIT_ASKPASS'] = str(askpass)
         os.environ['GIT_TERMINAL_PROMPT'] = '0'
-        # Replace the CI checkout URL (which may contain a job token) with a clean URL.
-        git('remote', 'set-url', 'origin', os.environ['CI_PROJECT_URL'] + '.git')
+        # Remove the runner's included URL rewrites, which otherwise inject its
+        # read-only CI_JOB_TOKEN even after changing the origin URL. This
+        # checkout is disposable and fetching has already finished.
+        git('config', '--local', '--unset-all', 'include.path', check=False)
+        project_url = urllib.parse.urlsplit(os.environ['CI_PROJECT_URL'])
+        push_url = urllib.parse.urlunsplit((project_url.scheme, 'oauth2@' + project_url.netloc, project_url.path + '.git', '', ''))
+        git('remote', 'set-url', 'origin', push_url)
         git('push', 'origin', sha + ':refs/heads/upstream/stable')
         # Preserve the exact upstream release tag, refusing to overwrite an existing tag.
         git('fetch', '--no-tags', 'https://github.com/hanxi/cups-web.git', 'refs/tags/' + tag + ':refs/tags/' + tag)
