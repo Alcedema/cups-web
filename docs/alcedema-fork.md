@@ -12,7 +12,7 @@ environment. Invalid values log a warning and fall back to English. Restart the
 service after changing the environment. Browser language is never consulted.
 
 Account settings is available in desktop navigation and the mobile menu. Select
-**Use server default**, **English**, or **简体中文**, then save. Preferences are stored
+**Use server default**, **English**, or **Ã§Â®â‚¬Ã¤Â½â€œÃ¤Â¸Â­Ã¦â€“â€¡**, then save. Preferences are stored
 on the account in SQLite, apply immediately, and survive logout, restart and
 switching browsers. Guests always use the server default and cannot edit the
 shared account. Printer names, document content, protocol values and unrecognised
@@ -31,7 +31,7 @@ server default. It does not reset passwords, session-signing keys or history.
 * `GET /api/me` adds saved `language` and resolved `effectiveLanguage`.
 * `PUT /api/me/preferences`: `{"language":""}`, `{"language":"en"}` or
   `{"language":"zh-CN"}`.
-* `PUT /api/me/password`: `{"currentPassword":"…","newPassword":"…"}`.
+* `PUT /api/me/password`: `{"currentPassword":"Ã¢â‚¬Â¦","newPassword":"Ã¢â‚¬Â¦"}`.
 
 Both writes require a browser session and a valid CSRF cookie/header pair.
 Guest and API-key requests are rejected. Existing `error` fields and HTTP status
@@ -71,7 +71,10 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath \
 The frontend must be built before Go because it is embedded in the binary.
 Release tags `vX.Y.Z-alcedema.N` publish the Linux amd64 binary, `SHA256SUMS` and
 `SOURCE_COMMIT` in GitLab's package registry, linked from the GitLab release.
-The version is displayed in the application's footer. CI release publication
+The footer identifies the Alcedema fork, links issue reports to GitLab, and credits
+hanxi/cups-web. Its MIT licence link serves the complete original copyright and
+licence notice embedded in the binary. Releases also include `LICENSE.txt`. The
+version is displayed in the footer. CI release publication
 uses its short-lived job token, never the synchronization credential.
 
 ## Upstream maintenance and mirroring

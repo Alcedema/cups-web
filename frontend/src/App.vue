@@ -104,63 +104,26 @@
       <div class="overflow-auto relative">
         <router-view :session="session" @login-success="onLogin" @logout="onLogout" />
       </div>
-      <footer class="px-6 py-3 border-t border-default bg-default text-sm text-muted flex items-center justify-center gap-3 flex-wrap">
-        <span>
-          {{ t('account.powered_by') }}
-          <a href="https://github.com/hanxi/cups-web" target="_blank" class="text-primary hover:underline">cups-web</a>
-        </span>
-        <span v-if="appVersion" class="text-default/40">·</span>
-        <!-- 版本号：二进制构建期由 -ldflags 注入到 main.Version，经 /api/version 返回。
-             用户二进制覆盖升级后，无需登录即可在 footer 上看到当前运行的版本（Issue #26）。 -->
-        <span v-if="appVersion" class="font-mono text-xs" :title="`cups-web ${appVersion}`">
-          {{ appVersion }}
-        </span>
-        <span class="text-default/40">·</span>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 text-primary hover:underline"
-          @click="showSponsorModal = true"
-        >
-          <UIcon name="i-lucide-heart" class="w-4 h-4" />
-          <span>{{ t('ui.mde55d5dfe5') }}</span>
-        </button>
+      <footer class="px-4 sm:px-6 py-3 border-t border-default bg-default text-sm text-muted text-center space-y-1">
+        <div class="flex items-center justify-center gap-x-3 gap-y-1 flex-wrap">
+          <a href="https://gitlab.com/Alcedema/cups-web" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">{{ t('footer.project_name') }}</a>
+          <template v-if="appVersion">
+            <span aria-hidden="true" class="text-default/40">·</span>
+            <span class="font-mono text-xs" :title="`cups-web ${appVersion}`">{{ appVersion }}</span>
+          </template>
+          <span aria-hidden="true" class="text-default/40">·</span>
+          <a href="https://gitlab.com/Alcedema/cups-web/-/issues" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">{{ t('footer.report_issue') }}</a>
+        </div>
+        <div class="flex items-center justify-center gap-x-3 gap-y-1 flex-wrap text-xs">
+          <span>
+            {{ t('footer.based_on') }}
+            <a href="https://github.com/hanxi/cups-web" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">{{ t('footer.upstream_name') }}</a>
+          </span>
+          <span aria-hidden="true" class="text-default/40">·</span>
+          <a href="/LICENSE.txt" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">{{ t('footer.licence') }}</a>
+        </div>
       </footer>
     </div>
-
-    <UModal v-model:open="showSponsorModal">
-      <template #content>
-        <div class="p-6 space-y-4">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-heart" class="w-5 h-5 text-primary" />
-            <h3 class="text-lg font-semibold">{{ t('ui.mde55d5dfe5') }}</h3>
-          </div>
-          <p class="text-sm text-muted">
-            {{ t('ui.m1e4e6b8282') }}
-          </p>
-          <div class="flex flex-col items-center gap-3 py-2">
-            <img
-              src="/sponsor.png"
-              :alt="t('ui.m5594539025')"
-              class="w-60 h-60 object-contain rounded-lg border border-default bg-white"
-              loading="lazy"
-            />
-            <div class="text-sm text-muted">{{ t('ui.m85cc4a59eb') }}</div>
-          </div>
-          <div class="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center pt-2 border-t border-default">
-            <a
-              href="https://afdian.com/a/imhanxi"
-              target="_blank"
-              rel="noopener"
-              class="inline-flex items-center gap-1 text-primary hover:underline text-sm"
-            >
-              <UIcon name="i-lucide-external-link" class="w-4 h-4" />
-              {{ t('ui.m3666dc570e') }}
-            </a>
-            <UButton variant="ghost" @click="showSponsorModal = false">{{ t('ui.m3fd47edce4') }}</UButton>
-          </div>
-        </div>
-      </template>
-    </UModal>
   </UApp>
 </template>
 
@@ -177,7 +140,6 @@ const route = useRoute()
 
 const session = ref(null)
 const sessionLoaded = ref(false)
-const showSponsorModal = ref(false)
 // 二进制版本号：首次挂载时拉一次 /api/version（公开接口，不要求登录），
 // 失败时保持空字符串，footer 上的版本号节点会被 v-if 隐藏，不影响布局。
 const appVersion = ref('')

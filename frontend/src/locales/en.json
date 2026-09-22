@@ -8,12 +8,6 @@
     "m8d72392eda": "Drivers",
     "m057f31bc16": "Sign out",
     "mc3cd485558": "CUPS Printing",
-    "mde55d5dfe5": "Support the author",
-    "m1e4e6b8282": "If cups-web is useful to you, you can support its continued maintenance below ❤️",
-    "m5594539025": "Donation QR code",
-    "m85cc4a59eb": "Scan to buy the author a cup of tea ☕",
-    "m3666dc570e": "Afdian profile",
-    "m3fd47edce4": "Close",
     "me3d70681aa": "Click or drag files here to upload",
     "mfa81b6fb1c": "Click or drag files to upload",
     "m065bc9bac3": "Supports PDF, Word, Excel, PowerPoint, OFD and images (multiple images allowed)",
@@ -562,7 +556,6 @@
   "account": {
     "title": "Account settings",
     "menu": "Navigation menu",
-    "powered_by": "Powered by",
     "language": "Interface language",
     "save": "Save preferences",
     "server_default": "Use server default",
@@ -871,5 +864,12 @@
     "close": "Close",
     "start_date": "Start date",
     "end_date": "End date"
+  },
+  "footer": {
+    "project_name": "CUPS Web — Alcedema",
+    "report_issue": "Report an issue",
+    "based_on": "Based on",
+    "upstream_name": "hanxi/cups-web",
+    "licence": "MIT licence"
   }
 }

@@ -8,12 +8,6 @@
     "m8d72392eda": "驱动",
     "m057f31bc16": "登出",
     "mc3cd485558": "CUPS 打印",
-    "mde55d5dfe5": "赞赏支持",
-    "m1e4e6b8282": "如果 cups-web 对你有帮助，欢迎通过以下方式支持作者持续维护 ❤️",
-    "m5594539025": "赞赏码",
-    "m85cc4a59eb": "扫码请作者喝杯奶茶 ☕",
-    "m3666dc570e": "爱发电主页",
-    "m3fd47edce4": "关闭",
     "me3d70681aa": "点击或拖拽上传文件",
     "mfa81b6fb1c": "点击或拖拽文件上传",
     "m065bc9bac3": "支持 PDF、Word、Excel、PPT、OFD、图片等格式（可多选图片）",
@@ -562,7 +556,6 @@
   "account": {
     "title": "账户设置",
     "menu": "导航菜单",
-    "powered_by": "由以下项目提供支持",
     "language": "界面语言",
     "save": "保存偏好设置",
     "server_default": "使用服务器默认语言",
@@ -871,5 +864,12 @@
     "close": "关闭",
     "start_date": "开始日期",
     "end_date": "结束日期"
+  },
+  "footer": {
+    "project_name": "CUPS Web — Alcedema",
+    "report_issue": "报告问题",
+    "based_on": "基于",
+    "upstream_name": "hanxi/cups-web",
+    "licence": "MIT 许可证"
   }
 }

@@ -20,6 +20,7 @@ frontend:
     - npm run check:translations
     - npm test
     - npm run build
+    - cmp ../LICENSE dist/LICENSE.txt
   artifacts:
     paths: [frontend/dist/]
     expire_in: 1 week
@@ -35,6 +36,7 @@ backend:
     - mkdir -p bin
     - VERSION="${CI_COMMIT_TAG:-${CI_COMMIT_SHORT_SHA}}"
     - GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.Version=$VERSION" -o bin/cups-web-linux-amd64 ./cmd/server
+    - cp LICENSE bin/LICENSE.txt
     - cd bin
     - sha256sum cups-web-linux-amd64 > SHA256SUMS
     - printf '%s\n' "$CI_COMMIT_SHA" > SOURCE_COMMIT
