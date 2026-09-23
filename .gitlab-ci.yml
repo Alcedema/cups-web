@@ -1,8 +1,15 @@
 stages: [verify, build, release, sync]
 
+# Project-locked Linux Docker runner; jobs wait when it is offline.
+default:
+  tags: [cups-web-linux-docker]
+
 variables:
   GIT_DEPTH: "0"
   CGO_ENABLED: "0"
+  npm_config_cache: "$CI_PROJECT_DIR/.cache/npm"
+  GOMODCACHE: "$CI_PROJECT_DIR/.cache/go-mod"
+  GOCACHE: "$CI_PROJECT_DIR/.cache/go-build"
 
 .candidate:
   rules:
@@ -25,11 +32,16 @@ frontend:
   image: node:22.22.0-bookworm@sha256:20a424ecd1d2064a44e12fe287bf3dae443aab31dc5e0c0cb6c74bef9c78911c
   script:
     - cd frontend
-    - npx --yes npm@11.6.2 ci
+    - npx --yes npm@11.6.2 ci --prefer-offline
     - npm run check:translations
     - npm test
     - npm run build
     - cmp ../LICENSE dist/LICENSE.txt
+  cache:
+    key:
+      prefix: npm-node22
+      files: [frontend/package-lock.json]
+    paths: [.cache/npm/]
   artifacts:
     paths: [frontend/dist/]
     expire_in: 1 week
@@ -51,6 +63,11 @@ backend:
     - cd bin
     - sha256sum cups-web-linux-amd64 > SHA256SUMS
     - printf '%s\n' "$CI_COMMIT_SHA" > SOURCE_COMMIT
+  cache:
+    key:
+      prefix: go1.26.1-linux-amd64
+      files: [go.sum]
+    paths: [.cache/go-mod/, .cache/go-build/]
   artifacts:
     paths: [bin/]
     expire_in: 1 year

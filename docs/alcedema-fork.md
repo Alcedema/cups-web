@@ -68,6 +68,13 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath \
   -o bin/cups-web-linux-amd64 ./cmd/server
 ```
 
+All jobs target the project runner tagged `cups-web-linux-docker`. It uses the
+Docker executor with the pinned Linux images in `.gitlab-ci.yml`; the native host
+operating system does not change the Linux build target. Jobs queue while this
+runner is offline. npm downloads and Go modules/build objects are cached between
+runs; protected and unprotected caches remain separate. Runner registration and
+machine configuration are maintained privately, outside this repository.
+
 The frontend must be built before Go because it is embedded in the binary.
 Follow the [release contract](release-contract.md) and record the version decision
 in `release.json`. Independent release tags `alcedema-vX.Y.Z` publish the Linux
