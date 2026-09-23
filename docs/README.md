@@ -4,6 +4,7 @@
 
 | 文件 | 内容 |
 | --- | --- |
+| [release-contract.md](release-contract.md) | Alcedema release version policy and publication checks |
 | [architecture.md](architecture.md) | 技术栈选型、外部依赖坑位（LibreOffice 可写 HOME、Ghostscript 字体破坏性改造、dpkg-dev 缺失） |
 | [pdf-pipeline.md](pdf-pipeline.md) | PDF 标准化三链路、Ghostscript cidfmap 两套加载机制、空壳 CJK 字体与 pdf.js 预览错位、HTTP 超时设计 |
 | [driver-management.md](driver-management.md) | 驱动持久化原理、manifest 白名单翻车案例、AIO 单一 EXIT trap、退出码由来、架构探测、`.deb` 上传机制、`lpinfo` 解析、异步任务模型 |

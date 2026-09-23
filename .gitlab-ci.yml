@@ -10,6 +10,15 @@ variables:
       when: never
     - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG || $CI_PIPELINE_SOURCE == "merge_request_event"'
 
+release-policy:
+  extends: .candidate
+  stage: verify
+  image: python:3.13.7-bookworm@sha256:c900d35aba5fe4c1dc1cd358408baae2902ff2a2926a1d15cc5002c6061ddb2e
+  script:
+    - python scripts/test_release_policy.py
+    - if [ -n "$CI_COMMIT_TAG" ]; then git fetch origin main:refs/remotes/origin/main --tags; fi
+    - python scripts/release_policy.py
+
 frontend:
   extends: .candidate
   stage: verify
@@ -29,14 +38,16 @@ backend:
   extends: .candidate
   stage: build
   image: golang:1.26.1-bookworm@sha256:ab3d6955bbc813a0f3fdf220c1d817dd89c0b3f283777db8ece4a32fe7858edd
-  needs: [frontend]
+  needs: [frontend, release-policy]
   script:
     - go test ./...
     - go vet ./...
     - mkdir -p bin
-    - VERSION="${CI_COMMIT_TAG:-${CI_COMMIT_SHORT_SHA}}"
+    - VERSION="${CI_COMMIT_SHORT_SHA}"
+    - if [ -n "$CI_COMMIT_TAG" ]; then VERSION="${CI_COMMIT_TAG#alcedema-v}"; fi
     - GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.Version=$VERSION" -o bin/cups-web-linux-amd64 ./cmd/server
     - cp LICENSE bin/LICENSE.txt
+    - cp release.json bin/RELEASE.json
     - cd bin
     - sha256sum cups-web-linux-amd64 > SHA256SUMS
     - printf '%s\n' "$CI_COMMIT_SHA" > SOURCE_COMMIT
@@ -54,10 +65,12 @@ sync-tests:
 release:
   stage: release
   image: python:3.13.7-bookworm@sha256:c900d35aba5fe4c1dc1cd358408baae2902ff2a2926a1d15cc5002c6061ddb2e
-  needs: [backend]
+  needs: [backend, frontend, release-policy, sync-tests]
+  resource_group: release-publication
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+-alcedema\.[0-9]+$/'
+    - if: '$CI_COMMIT_TAG =~ /^alcedema-v[0-9]+\.[0-9]+\.[0-9]+$/'
   script:
+    - git fetch origin main:refs/remotes/origin/main --tags
     - python scripts/publish_release.py
 
 upstream-sync:

@@ -2,6 +2,10 @@
 
 > 本文档是 [AGENTS.md](../AGENTS.md) 的补充，收录常见开发任务的步骤模板、调试方法与代码风格约定。
 
+> Alcedema fork: follow the English [agent guide](../AGENTS.md) for privacy,
+> authorisation, toolchain and commit conventions. Examples below are technical
+> background, not permission to read production data or modify live services.
+
 ## 常见开发任务
 
 ### 新增 API 接口
@@ -57,7 +61,11 @@
 7. **验证**：容器内 `driver-list` 看是否出现在可用列表（会显示 `Restore: package/files/hybrid`）、`driver-install <name>` 跑通、`cat /opt/cups-drivers/data/<name>/manifest.txt` 检查清单里**没有**系统文件（尤其没有 CUPS 自己的 backend/filter）、`driver-remove <name>` 后系统仍然完好（`lpstat -r` 正常、`/usr/lib/cups/backend/*` 还在）。
 8. **恢复验证必须销毁重建容器**：
    ```bash
-   docker rm -f <ct> && docker run -d --name <ct> -v "$PWD/.drivers:/opt/cups-drivers/data" <image>
+   # Only a disposable container and test volume created for this task.
+   # Check the resolved container/volume identities before any removal.
+   # Never substitute a production container or production data directory.
+   docker rm -f <disposable-test-container>
+   docker run -d --name <disposable-test-container> -v <disposable-test-volume>:/opt/cups-drivers/data <test-image>
    ```
    🚫 **不能用 `docker restart`** —— 它保留容器可写层，驱动文件本来就还在，测不出任何东西，会假通过。重建后逐项确认关键产物（filter、共享库、PPD、厂商数据目录）都回来了，`ldd` 无 `not found`。
 
@@ -84,11 +92,13 @@ bun run dev                  # 本地调试
 ### 数据库查看
 
 ```bash
-sqlite3 data/cups-web.db
+# Disposable test database only; do not dump production rows or secret values.
+sqlite3 /path/to/disposable-test.db
 .tables
-SELECT * FROM users;
-SELECT id, filename, status, is_duplex, is_color, created_at FROM print_jobs ORDER BY id DESC LIMIT 20;
-SELECT * FROM settings;
+.schema users
+SELECT role, COUNT(*) FROM users GROUP BY role;
+SELECT COUNT(*) FROM print_jobs;
+SELECT key FROM settings;
 ```
 
 ## 代码风格

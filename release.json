@@ -1,0 +1,15 @@
+{
+  "version": "0.3.0",
+  "previousTag": "v0.2.15-alcedema.2",
+  "upstreamTag": "v0.2.15",
+  "upstreamCommit": "6d34188c85e84c20cc31d9d113cb288735e34c68",
+  "changes": [
+    {
+      "impact": "transition",
+      "summary": "Adopt independent Alcedema release versions, with a recorded version decision and CI validation."
+    }
+  ],
+  "rationale": "One-time transition from v0.2.15-alcedema.2 to the independent 0.3.0 version series; no new application functionality is claimed.",
+  "upgradeNotes": "No application data migration is introduced by the release-policy change.",
+  "stabilityRationale": ""
+}

@@ -85,12 +85,9 @@ Eclipse Temurin 对 "Linux ARM 32-bit Hard-Float" 仅 JDK 8/11 有二进制，JD
 - `linux/loong64` 依赖 `modernc.org/sqlite` ≥ `v1.34`（`v1.29.0` 尚未支持 loong64 架构）。
 - 由于全仓严格 `CGO_ENABLED=0`，新增其他 modernc 已支持的架构（`riscv64` / `s390x` / `ppc64le` 等）只需往 `build-release.yml` 的 matrix 里加一行 `goos/goarch/suffix`，无需额外工具链。
 
-## 版本管理
+## Alcedema release versions
 
-使用 `bump-version.sh` 打 tag：
-
-```bash
-./bump-version.sh patch    # 默认
-./bump-version.sh minor
-./bump-version.sh major
-```
+The workflow descriptions above are inherited upstream background. For this fork,
+use GitLab CI and the [release contract](release-contract.md). Record the version
+in `release.json` and run `python scripts/release_policy.py` to validate it.
+`bump-version.sh` no longer creates or pushes tags.

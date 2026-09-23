@@ -64,13 +64,14 @@ go vet ./...
 python scripts/test_upstream_sync.py
 mkdir -p bin
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath \
-  -ldflags '-s -w -X main.Version=v0.2.15-alcedema.1' \
+  -ldflags '-s -w -X main.Version=dev' \
   -o bin/cups-web-linux-amd64 ./cmd/server
 ```
 
 The frontend must be built before Go because it is embedded in the binary.
-Release tags `vX.Y.Z-alcedema.N` publish the Linux amd64 binary, `SHA256SUMS` and
-`SOURCE_COMMIT` in GitLab's package registry, linked from the GitLab release.
+Follow the [release contract](release-contract.md) and record the version decision
+in `release.json`. Independent release tags `alcedema-vX.Y.Z` publish the Linux
+amd64 binary, `RELEASE.json`, `SHA256SUMS` and `SOURCE_COMMIT` in GitLab's package registry, linked from the GitLab release.
 The footer identifies the Alcedema fork, links issue reports to GitLab, and credits
 hanxi/cups-web. Its MIT licence link serves the complete original copyright and
 licence notice embedded in the binary. Releases also include `LICENSE.txt`. The
@@ -100,15 +101,15 @@ pipeline validation status. Review the complete pipeline before merging.
 `write_repository`, masked, hidden and protected, scoped to environment
 `upstream-sync`. Only the trusted scheduled job declares that environment.
 Merge request pipelines cannot access protected variables. Main only permits
-maintainers to push or merge; the sync token cannot do either. The token expires
-on **22 September 2027** and must be rotated in GitLab before then.
+maintainers to push or merge; the sync token cannot do either. Rotate the token before its configured expiry; keep the operational schedule private.
 
 ## Native LXC installation
 
-NUC5 CT 115 uses `/opt/cups-web/cups-web`, `/etc/cups-web/environment`, and
-`/var/lib/cups-web` under the existing `cups-web` service account. CUPS remains on
-port 631 and CUPS Web on 8080. There is no automated deployment job; ongoing
-deployment and Ansible integration are deferred.
+Deploy the Linux binary under a dedicated service account, with persistent state
+and service configuration outside the source checkout. CUPS and CUPS Web are
+separate services; retain the configured addresses and ports during an upgrade.
+Keep actual hostnames, container IDs, filesystem inventory and backup locations
+in a private operational runbook. Deployment is currently manual.
 
 Before replacing a production binary, validate the candidate with disposable
 state, including a legacy-database migration and rollback. Stop CUPS Web, back up

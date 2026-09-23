@@ -152,5 +152,5 @@ Traefik 同样默认转发 `X-Forwarded-*` 全套。注意它默认会保留原�
 
 ## 相关
 
-- [AGENTS.md 的「🔐 认证与安全」](../AGENTS.md#-认证与安全)——鉴权链与 cookie 约定速查
+- [Authentication, API and persistence invariants](../AGENTS.md#authentication-api-and-persistence-invariants)——鉴权链与 cookie 约定速查
 - [docker-build.md](docker-build.md)——网络模式与 compose 配置理由
