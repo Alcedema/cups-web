@@ -22,7 +22,7 @@
     "vue-router": "5.0.6"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "1.2.105",
+    "@iconify-json/lucide": "1.2.138",
     "@tailwindcss/postcss": "4.3.3",
     "@vitejs/plugin-vue": "6.0.3",
     "@vue/test-utils": "2.4.6",
