@@ -24,7 +24,7 @@
   "devDependencies": {
     "@iconify-json/lucide": "1.2.105",
     "@tailwindcss/postcss": "4.3.3",
-    "@vitejs/plugin-vue": "6.0.3",
+    "@vitejs/plugin-vue": "6.0.9",
     "@vue/test-utils": "2.4.6",
     "autoprefixer": "10.4.23",
     "jsdom": "26.1.0",
