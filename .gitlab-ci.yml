@@ -1,5 +1,14 @@
 stages: [verify, build, release, sync]
 
+workflow:
+  rules:
+    # Renovate opens an MR after its first push; validate that MR only.
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^renovate\//'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - when: always
+
 # Project-locked Linux Docker runner; jobs wait when it is offline.
 default:
   tags: [cups-web-linux-docker]
