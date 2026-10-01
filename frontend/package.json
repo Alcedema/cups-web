@@ -34,5 +34,5 @@
     "vite": "7.3.6",
     "vitest": "4.1.11"
   },
-  "packageManager": "npm@11.6.2"
+  "packageManager": "npm@12.2.0"
 }
