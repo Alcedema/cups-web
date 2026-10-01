@@ -27,7 +27,7 @@
     "@vitejs/plugin-vue": "6.0.3",
     "@vue/test-utils": "2.4.6",
     "autoprefixer": "10.4.23",
-    "jsdom": "26.1.0",
+    "jsdom": "30.1.1",
     "postcss": "8.5.28",
     "tailwindcss": "4.3.3",
     "unplugin-vue-components": "31.1.0",
