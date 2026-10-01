@@ -29,7 +29,7 @@ release-policy:
 frontend:
   extends: .candidate
   stage: verify
-  image: node:22.22.0-bookworm@sha256:20a424ecd1d2064a44e12fe287bf3dae443aab31dc5e0c0cb6c74bef9c78911c
+  image: node:24.21.0-bookworm@sha256:64af3819f9275802414d7cdc38c27e9d82bd564dec4d4da87d008255d36c63b4
   script:
     - cd frontend
     - npx --yes npm@11.6.2 ci --prefer-offline

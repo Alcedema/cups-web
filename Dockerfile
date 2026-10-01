@@ -21,7 +21,7 @@
 # 会导致 linux/arm/v7 构建直接找不到 manifest。node:20-slim 官方镜像覆盖 amd64/arm32v7/arm64v8，
 # 而 frontend/package.json 里 scripts 全是标准 Vite/Node 命令，完全不依赖 bun 专有 API，
 # 用 npm ci 替换 bun install 即可获得跨三架构的一致构建产物。
-FROM node:20-slim AS frontend-build
+FROM node:24-slim AS frontend-build
 WORKDIR /src/frontend
 COPY frontend/package*.json ./
 RUN npm ci --no-audit --no-fund --prefer-offline
