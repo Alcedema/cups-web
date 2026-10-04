@@ -9,9 +9,9 @@ workflow:
       when: never
     - when: always
 
-# Project-locked Linux Docker runner; jobs wait when it is offline.
+# Group Docker pool; every job requires the explicit general capability set.
 default:
-  tags: [cups-web-linux-docker]
+  tags: [linux, docker, amd64, general]
 
 variables:
   GIT_DEPTH: "0"
