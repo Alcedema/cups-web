@@ -1,8 +1,17 @@
 stages: [verify, build, release, sync]
 
-# Project-locked Linux Docker runner; jobs wait when it is offline.
+workflow:
+  rules:
+    # Renovate opens an MR after its first push; validate that MR only.
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^renovate\//'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - when: always
+
+# Group Docker pool; every job requires the explicit general capability set.
 default:
-  tags: [cups-web-linux-docker]
+  tags: [linux, docker, amd64, general]
 
 variables:
   GIT_DEPTH: "0"
