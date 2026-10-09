@@ -20,7 +20,7 @@ frontend)
   done
   ;;
 backend)
-  export CGO_ENABLED=0 GOMAXPROCS=4
+  export CGO_ENABLED=0 GOMAXPROCS=6
   mkdir -p bin
   for rep in 1 2 3; do
     export GOMODCACHE="$CI_PROJECT_DIR/.bench/go-mod-$rep" GOCACHE="$CI_PROJECT_DIR/.bench/go-build-$rep"
