@@ -23,60 +23,6 @@
     "GIT_SUBMODULE_STRATEGY": "none"
   },
   "cache": [],
-  "main:frontend": {
-    "stage": "benchmark",
-    "image": {
-      "name": "node:22.22.0-bookworm@sha256:20a424ecd1d2064a44e12fe287bf3dae443aab31dc5e0c0cb6c74bef9c78911c",
-      "entrypoint": [
-        ""
-      ]
-    },
-    "variables": {
-      "BENCH_WORKLOAD": "frontend"
-    },
-    "script": [
-      "sh .benchmark-run.sh"
-    ],
-    "artifacts": {
-      "when": "always",
-      "expire_in": "1 week",
-      "paths": [
-        ".bench/results.jsonl",
-        "frontend/dist/"
-      ]
-    },
-    "tags": [
-      "benchmark-main-20261009"
-    ]
-  },
-  "main:backend": {
-    "stage": "backend",
-    "image": {
-      "name": "golang:1.26.1-bookworm@sha256:ab3d6955bbc813a0f3fdf220c1d817dd89c0b3f283777db8ece4a32fe7858edd",
-      "entrypoint": [
-        ""
-      ]
-    },
-    "variables": {
-      "BENCH_WORKLOAD": "backend"
-    },
-    "script": [
-      "sh .benchmark-run.sh"
-    ],
-    "artifacts": {
-      "when": "always",
-      "expire_in": "1 week",
-      "paths": [
-        ".bench/results.jsonl"
-      ]
-    },
-    "needs": [
-      "main:frontend"
-    ],
-    "tags": [
-      "benchmark-main-20261009"
-    ]
-  },
   "offsite:frontend": {
     "stage": "benchmark",
     "image": {
@@ -100,7 +46,7 @@
       ]
     },
     "tags": [
-      "benchmark-offsite-20261009"
+      "benchmark-offsite4-20261009"
     ]
   },
   "offsite:backend": {
@@ -128,7 +74,7 @@
       "offsite:frontend"
     ],
     "tags": [
-      "benchmark-offsite-20261009"
+      "benchmark-offsite4-20261009"
     ]
   }
 }
